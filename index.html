@@ -1644,10 +1644,11 @@ function saveQuote() {
 
 // ── Save Quote to Google Drive ────────────────────────────────────────────
 // Uploads directly into a shared "BloomLED Quotes/YYYY/MM-Month/" folder structure.
-// Uses the narrow drive.file scope: this app can only see/manage files it creates itself,
-// not your entire Drive.
+// Uses the standard drive scope so the app can write into a pre-existing folder
+// (DRIVE_ROOT_FOLDER_ID below) that was created and shared manually, not by the app itself.
 var GOOGLE_CLIENT_ID = "450007602531-ppbo167nvlp3h62d491djberuspks2le.apps.googleusercontent.com";
-var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
+var DRIVE_ROOT_FOLDER_ID = "1789nx4r8x7vM3ElmWTLNQ1s-XdLkHJMg"; // shared "BloomLED Quotes" folder
 var _driveTokenClient = null;
 var _driveAccessToken = null;
 
@@ -1732,8 +1733,7 @@ function doSaveToDrive() {
                      "07-July","08-August","09-September","10-October","11-November","12-December"];
   var month = monthNames[now.getMonth()];
 
-  driveFindOrCreateFolder("BloomLED Quotes", null)
-    .then(function(rootId) { return driveFindOrCreateFolder(year, rootId); })
+  driveFindOrCreateFolder(year, DRIVE_ROOT_FOLDER_ID)
     .then(function(yearId) { return driveFindOrCreateFolder(month, yearId); })
     .then(function(monthId) {
       var metadata = { name: filename, parents: [monthId] };
