@@ -113,6 +113,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
 @media(max-width:640px){.metrics{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.main{padding:1rem}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -124,6 +125,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
   <div class="hdr-btns">
     <button class="btn-sm" onclick="loadQuoteDialog()" style="background:var(--cyan-lt);color:var(--cyan);border-color:#bae6fd">&#128193; Load Quote</button>
     <button class="btn-sm" onclick="saveQuote()" style="background:var(--green-lt);color:var(--green);border-color:#a7f3d0">&#128190; Save Quote</button>
+    <button class="btn-sm" id="btn-save-drive" onclick="saveQuoteToDrive()" style="background:#e0f2fe;color:#0891b2;border-color:#bae6fd">&#9729; Save to Drive</button>
     <button class="btn-sm" onclick="exportExcelData()" style="background:#d1fae5;color:#065f46;border-color:#6ee7b7">&#128202; Export Excel</button>
     <button class="btn-sm btn-print" onclick="buildPrint();window.print()">&#128438; Print / PDF</button>
     <button class="btn-sm btn-admin" onclick="openAdmin()">&#128274; Admin</button>
@@ -1638,6 +1640,124 @@ function saveQuote() {
     if (idx.length > 20) idx = idx.slice(0, 20);
     localStorage.setItem(QUOTE_STORE_KEY, JSON.stringify(idx));
   } catch(e) {}
+}
+
+// ── Save Quote to Google Drive ────────────────────────────────────────────
+// Uploads directly into a shared "BloomLED Quotes/YYYY/MM-Month/" folder structure.
+// Uses the narrow drive.file scope: this app can only see/manage files it creates itself,
+// not your entire Drive.
+var GOOGLE_CLIENT_ID = "450007602531-ppbo167nvlp3h62d491djberuspks2le.apps.googleusercontent.com";
+var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+var _driveTokenClient = null;
+var _driveAccessToken = null;
+
+function setDriveBtnState(mode) {
+  var btn = D("btn-save-drive");
+  if (!btn) return;
+  if (mode === "loading") { btn.disabled = true; btn.innerHTML = "&#9729; Saving&hellip;"; }
+  else if (mode === "done") { btn.disabled = false; btn.innerHTML = "&#9729; Saved to Drive &#10003;"; setTimeout(function(){ btn.innerHTML = "&#9729; Save to Drive"; }, 2500); }
+  else { btn.disabled = false; btn.innerHTML = "&#9729; Save to Drive"; }
+}
+
+function saveQuoteToDrive() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    alert("Google Sign-In hasn't finished loading yet. Please wait a moment and try again.");
+    return;
+  }
+  if (_driveAccessToken) {
+    doSaveToDrive();
+    return;
+  }
+  if (!_driveTokenClient) {
+    _driveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: function(resp) {
+        if (resp.error) {
+          setDriveBtnState("idle");
+          alert("Google sign-in failed or was cancelled: " + resp.error);
+          return;
+        }
+        _driveAccessToken = resp.access_token;
+        doSaveToDrive();
+      }
+    });
+  }
+  _driveTokenClient.requestAccessToken();
+}
+
+function driveApiFetch(url, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  options.headers["Authorization"] = "Bearer " + _driveAccessToken;
+  return fetch(url, options).then(function(r) {
+    if (!r.ok) {
+      return r.json().catch(function(){ return {}; }).then(function(errBody) {
+        var msg = (errBody.error && errBody.error.message) || (r.status + " " + r.statusText);
+        throw new Error(msg);
+      });
+    }
+    return r.json();
+  });
+}
+
+function driveFindOrCreateFolder(name, parentId) {
+  var safeName = name.replace(/'/g, "\\'");
+  var q = "mimeType='application/vnd.google-apps.folder' and name='" + safeName + "' and trashed=false"
+    + (parentId ? " and '" + parentId + "' in parents" : "");
+  var listUrl = "https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id,name)&spaces=drive";
+  return driveApiFetch(listUrl).then(function(data) {
+    if (data.files && data.files.length > 0) return data.files[0].id;
+    var metadata = { name: name, mimeType: "application/vnd.google-apps.folder" };
+    if (parentId) metadata.parents = [parentId];
+    return driveApiFetch("https://www.googleapis.com/drive/v3/files", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(metadata)
+    }).then(function(f) { return f.id; });
+  });
+}
+
+function doSaveToDrive() {
+  setDriveBtnState("loading");
+  var quoteNum = (D("proj-quote-num") && D("proj-quote-num").value) || "UNSAVED";
+  var client   = (D("proj-client")   && D("proj-client").value)    || "No client";
+  var state = collectQuoteState();
+  var json  = JSON.stringify(state, null, 2);
+  var filename = quoteNum + "_" + client.replace(/[^a-zA-Z0-9]/g,"_") + ".json";
+
+  var now = new Date();
+  var year = String(now.getFullYear());
+  var monthNames = ["01-January","02-February","03-March","04-April","05-May","06-June",
+                     "07-July","08-August","09-September","10-October","11-November","12-December"];
+  var month = monthNames[now.getMonth()];
+
+  driveFindOrCreateFolder("BloomLED Quotes", null)
+    .then(function(rootId) { return driveFindOrCreateFolder(year, rootId); })
+    .then(function(yearId) { return driveFindOrCreateFolder(month, yearId); })
+    .then(function(monthId) {
+      var metadata = { name: filename, parents: [monthId] };
+      var boundary = "-------bloomledquote" + Date.now();
+      var body = "--" + boundary + "\r\n"
+        + "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+        + JSON.stringify(metadata) + "\r\n"
+        + "--" + boundary + "\r\n"
+        + "Content-Type: application/json\r\n\r\n"
+        + json + "\r\n"
+        + "--" + boundary + "--";
+      return driveApiFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+        method: "POST",
+        headers: { "Content-Type": "multipart/related; boundary=" + boundary },
+        body: body
+      });
+    })
+    .then(function() {
+      setDriveBtnState("done");
+    })
+    .catch(function(err) {
+      setDriveBtnState("idle");
+      alert("Save to Drive failed: " + err.message + "\n\nYour quote data is safe — use \"Save Quote\" to download it locally instead.");
+    });
 }
 
 function restoreQuoteState(state) {
