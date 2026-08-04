@@ -443,7 +443,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
   <div class="metrics">
     <div class="metric bare"><div class="m-lbl">Bare cost (PHP)</div><div class="m-val" id="s-bare">&mdash;</div><div class="m-note">all costs, no markup</div></div>
     <div class="metric profit"><div class="m-lbl">Profit (PHP)</div><div class="m-val" id="s-profit">&mdash;</div><div class="m-note" id="s-margin-note">at 30%</div></div>
-    <div class="metric vatex"><div class="m-lbl">VAT exclusive (PHP)</div><div class="m-val" id="s-vatex">&mdash;</div><div class="m-note">selling price ex-VAT</div></div>
+    <div class="metric vatex"><div class="m-lbl">VAT exclusive (PHP)</div><div class="m-val" id="s-vatex">&mdash;</div><div class="m-note">selling price ex-VAT, incl. honorarium</div></div>
     <div class="metric vatwith"><div class="m-lbl">With VAT 12% (PHP)</div><div class="m-val" id="s-vatwith">&mdash;</div><div class="m-note">for client quotation</div></div>
   </div>
   <div class="divider"></div>
@@ -452,13 +452,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
     <tbody>
       <tr><td class="cat" colspan="2">A. Product lines (LED + shipment)</td></tr>
       <tbody id="sum-lines-rows"></tbody>
-      <tr><td class="cat" colspan="2">B. Electrical</td></tr>
-      <tr><td style="padding-left:12px;color:var(--text2)">All electrical items</td><td id="sum-elec">&mdash;</td></tr>
-      <tr><td class="cat" colspan="2">C. Structural</td></tr>
-      <tr><td style="padding-left:12px;color:var(--text2)">All structural items</td><td id="sum-struct">&mdash;</td></tr>
-      <tr><td class="cat" colspan="2">D. Honorarium (VAT-inclusive, no markup)</td></tr>
+      <tr><td class="cat" colspan="2">B. Honorarium (VAT-inclusive, no markup)</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Total honorarium (with 12% VAT)</td><td id="sum-honor">&mdash;</td></tr>
-      <tr><td class="cat" colspan="2">E. Shared costs</td></tr>
+      <tr><td class="cat" colspan="2">C. Shared costs</td></tr>
+      <tr><td style="padding-left:12px;color:var(--text2)">Electrical</td><td id="sum-elec">&mdash;</td></tr>
+      <tr><td style="padding-left:12px;color:var(--text2)">Structural</td><td id="sum-struct">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Ocular travel</td><td id="sum-ocular">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Delivery + manpower + lodging</td><td id="sum-delivery">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Mobilization / labor</td><td id="sum-mob">&mdash;</td></tr>
@@ -466,9 +464,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       <tr><td style="padding-left:12px;color:var(--text2)">PMS + warranty</td><td id="sum-aftersales">&mdash;</td></tr>
       <tr class="tot"><td>Total bare cost</td><td id="sum-bare">&mdash;</td></tr>
       <tr class="tot"><td>Profit (<span id="sum-margin-pct">30</span>% of bare cost)</td><td id="sum-profit">&mdash;</td></tr>
-      <tr class="tot"><td>Selling price before discount (VAT ex)</td><td id="sum-vatex-predisc">&mdash;</td></tr>
+      <tr class="tot"><td>Selling price before discount (VAT ex, incl. honorarium)</td><td id="sum-vatex-predisc">&mdash;</td></tr>
       <tr class="tot" id="sum-discount-row" style="display:none"><td style="color:var(--red)">Discount</td><td id="sum-discount" style="color:var(--red)">&mdash;</td></tr>
-      <tr class="tot vat"><td>Suggested selling price (VAT ex)</td><td id="sum-vatex">&mdash;</td></tr>
+      <tr class="tot vat"><td>Suggested selling price (VAT ex, incl. honorarium)</td><td id="sum-vatex">&mdash;</td></tr>
       <tr class="tot vat main"><td><strong>With VAT 12% &mdash; for client quotation</strong></td><td id="sum-vatwith"><strong>&mdash;</strong></td></tr>
     </tbody>
   </table>
@@ -1450,6 +1448,9 @@ function exportExcelData() {
   var vatWith = vatAmt + vatex + honorVAT;
 
   var vatexRatio = bareCost > 0 ? vatexPreDiscount / bareCost : 1;
+  var totalLEDShipOnly = totalLineBare - totalStruct; // pure LED+shipment, excludes structural
+  var vatexPreDiscountDisplay = vatexPreDiscount + honorTotal; // display-only: VAT-ex incl. honorarium
+  var vatexDisplay = vatex + honorTotal; // display-only: VAT-ex (post-discount) incl. honorarium
 
   // ══ SHEET 1: Quotation Summary ═════════════════════════════════════════
   var s1 = [
@@ -1466,9 +1467,9 @@ function exportExcelData() {
     ["FIGURE", "AMOUNT (PHP)"],
     ["Total Bare Cost", round2(bareCost)],
     ["Profit (" + margin + "% of bare cost)", round2(profitAmt)],
-    ["Selling Price before Discount (VAT ex)", round2(vatexPreDiscount)],
+    ["Selling Price before Discount (VAT ex, incl. honorarium)", round2(vatexPreDiscountDisplay)],
     ["Discount (" + (discType === "pct" ? discValue + "%" : "fixed") + ")", round2(discountAmt) * -1],
-    ["Selling Price (VAT ex)", round2(vatex)],
+    ["Selling Price (VAT ex, incl. honorarium)", round2(vatexDisplay)],
     ["VAT 12%", round2(vatAmt)],
     ["Honorarium (VAT-inclusive, no markup)", round2(honorVAT)],
     ["TOTAL (VAT-inclusive, for client quotation)", round2(vatWith)]
@@ -1491,11 +1492,11 @@ function exportExcelData() {
   var s3 = [
     ["FULL COST BREAKDOWN", "AMOUNT (PHP)"],
     [],
-    ["A. Product Lines (LED + shipment + structural)", round2(totalLineBare)],
-    ["B. Electrical", round2(elecTotal)],
-    ["C. Structural (included above, per line)", round2(totalStruct)],
-    ["D. Honorarium (VAT-inclusive, no markup)", round2(honorVAT)],
-    ["E. Shared Costs", ""],
+    ["A. Product Lines (LED + shipment)", round2(totalLEDShipOnly)],
+    ["B. Honorarium (VAT-inclusive, no markup)", round2(honorVAT)],
+    ["C. Shared Costs", ""],
+    ["   Electrical", round2(elecTotal)],
+    ["   Structural", round2(totalStruct)],
     ["   Ocular travel", round2(ocular)],
     ["   Delivery + manpower + lodging", round2(delivery)],
     ["   Mobilization / labor", round2(mob)],
@@ -1504,9 +1505,9 @@ function exportExcelData() {
     [],
     ["Total Bare Cost", round2(bareCost)],
     ["Profit (" + margin + "% of bare cost)", round2(profitAmt)],
-    ["Selling Price before Discount (VAT ex)", round2(vatexPreDiscount)],
+    ["Selling Price before Discount (VAT ex, incl. honorarium)", round2(vatexPreDiscountDisplay)],
     ["Discount", round2(discountAmt) * -1],
-    ["Suggested Selling Price (VAT ex)", round2(vatex)],
+    ["Suggested Selling Price (VAT ex, incl. honorarium)", round2(vatexDisplay)],
     ["VAT 12%", round2(vatAmt)],
     ["TOTAL with VAT \u2014 for client quotation", round2(vatWith)]
   ];
@@ -2020,7 +2021,7 @@ function updateAfterSales() {
 function calcAll() {
   var fx = fv("fx") || 57;
   var margin = fv("margin") || 30;
-  var totalLineBare = 0, lineBares = [], lineNames = [], totalStruct = 0;
+  var totalLineBare = 0, lineBares = [], lineLEDShipOnly = [], lineNames = [], lineStructs = [], totalStruct = 0;
 
   lines.forEach(function(line) {
     var id = line.id;
@@ -2099,9 +2100,11 @@ function calcAll() {
     var structPHP = fv("sv-" + id);
     setR("sr-" + id, structPHP);
     totalStruct += structPHP;
+    lineStructs.push(structPHP);
 
     var lineBare = ld.total + seaPHP + airPHP + structPHP;
     lineBares.push(lineBare);
+    lineLEDShipOnly.push(ld.total + seaPHP + airPHP); // for display only — excludes structural
     lineNames.push((D("pln-name-" + id) && D("pln-name-" + id).value) || ("Product Line " + line.num));
     totalLineBare += lineBare;
 
@@ -2171,19 +2174,25 @@ function calcAll() {
   var discDisplay = D("disc-amt-display");
   if (discDisplay) discDisplay.innerHTML = discountAmt > 0 ? "&minus;" + php(discountAmt) : "&mdash;";
 
+  // Display-only figures for the app UI: VAT-ex totals shown to the user include honorarium,
+  // so "VAT ex * 1.12 = With VAT" reconciles visually. This does NOT change window._vatexPreDiscount
+  // or any other stored value the print quote depends on — those stay honorarium-free as before.
+  var vatexPreDiscountDisplay = vatexPreDiscount + honorTotal;
+  var vatexDisplay = vatex + honorTotal;
+
   function phpF(n) { return n > 0 ? php(n) : "&mdash;"; }
   function set2(id, v) { var e = D(id); if (e) e.innerHTML = v; }
 
   set2("s-bare", phpF(bareCost)); set2("s-profit", phpF(profitAmt));
-  set2("s-vatex", phpF(vatex)); set2("s-vatwith", phpF(vatWith));
+  set2("s-vatex", phpF(vatexDisplay)); set2("s-vatwith", phpF(vatWith));
   var smn = D("s-margin-note"); if (smn) smn.textContent = "at " + margin + "%";
   var smp = D("sum-margin-pct"); if (smp) smp.textContent = margin;
 
-  // Summary lines rows
+  // Summary lines rows — pure LED + shipment only (structural shown separately under Shared costs)
   var slr = D("sum-lines-rows");
   if (slr) {
     slr.innerHTML = "";
-    lineBares.forEach(function(b, i) {
+    lineLEDShipOnly.forEach(function(b, i) {
       var tr = document.createElement("tr");
       tr.innerHTML = "<td style='padding-left:12px;color:var(--text2)'>" + (lineNames[i] || "Line " + (i+1)) + "</td>"
         + "<td style='text-align:right;font-weight:500;color:var(--text)'>" + (b > 0 ? php(b) : "&mdash;") + "</td>";
@@ -2195,11 +2204,11 @@ function calcAll() {
   bk("sum-elec", elecTotal); bk("sum-struct", totalStruct); bk("sum-honor", honorVAT); bk("sum-ocular", ocular); bk("sum-delivery", delivery);
   bk("sum-mob", mob); bk("sum-misc", misc); bk("sum-aftersales", aftersales);
   set2("sum-bare", phpF(bareCost)); set2("sum-profit", phpF(profitAmt));
-  set2("sum-vatex-predisc", phpF(vatexPreDiscount));
+  set2("sum-vatex-predisc", phpF(vatexPreDiscountDisplay));
   var discRow = D("sum-discount-row");
   if (discRow) discRow.style.display = discountAmt > 0 ? "table-row" : "none";
   set2("sum-discount", discountAmt > 0 ? "&minus;" + php(discountAmt) : "&mdash;");
-  set2("sum-vatex", phpF(vatex));
+  set2("sum-vatex", phpF(vatexDisplay));
   set2("sum-vatwith", vatWith > 0 ? "<strong>" + php(vatWith) + "</strong>" : "<strong>&mdash;</strong>");
 
   var tags = {standard:"", bulk:"<span class='tag tag-bulk'>Bulk deal</span>", hitlist:"<span class='tag tag-hitlist'>Hit list</span>"};
@@ -2304,9 +2313,53 @@ function buildPrint() {
   var vatAmt = vatex * 0.12, total = vatex + vatAmt;
   var lPrices = (window._lineSellPrices || []).slice(), lNames = window._lineNames || [];
   var sharedPrice = window._sharedSellPHP || 0;
-  if (honorTotal > 0) {
-    if (lPrices.length) { lPrices[0] = (lPrices[0] || 0) + honorTotal; }
-    else { sharedPrice += honorTotal; }
+
+  // ── Reallocate Structural / PMS+Warranty / Honorarium between "Product Line" and
+  //    "Structural and Mobilization" buckets for the printed quote, per BloomLED's
+  //    JIT vs. non-JIT presentation rules. This only moves amounts between buckets —
+  //    it never changes the grand total.
+  var vatexRatioForRealloc = (_lastBareCost > 0 && window._vatexPreDiscount) ? (window._vatexPreDiscount / _lastBareCost) : 1;
+
+  // Structural: stays inside Product Line pricing for JIT lines (already embedded by calcAll).
+  // For non-JIT lines, move it OUT of Product Line and INTO the Structural and Mobilization bucket.
+  var nonJITStructTotal = 0;
+  lines.forEach(function(ln, i) {
+    var t = (D("pl-type-"+ln.id) && D("pl-type-"+ln.id).value) || "";
+    var isJITLine = t.indexOf("jit") === 0;
+    if (!isJITLine) {
+      var structSell = fv("sv-"+ln.id) * vatexRatioForRealloc;
+      nonJITStructTotal += structSell;
+      if (lPrices[i] !== undefined) lPrices[i] = (lPrices[i] || 0) - structSell;
+    }
+  });
+  sharedPrice += nonJITStructTotal;
+
+  // PMS + Warranty: recompute fresh, then move OUT of Structural/Mobilization and
+  // divide evenly across all product lines, added into their Product Line price
+  // — together with Honorarium, using the same even split.
+  var pmsVisits2 = parseInt((D("c-pms-qty") && D("c-pms-qty").value) || 4) || 4;
+  var pmsRate2   = fv("c-pms-rate");
+  var pms2       = pmsVisits2 * pmsRate2;
+  var awYears2   = parseInt((D("c-aw-years") && D("c-aw-years").value) || 0) || 0;
+  var factorMap3 = {0:0, 1:0.10, 2:0.18, 3:0.25, 4:0.32, 5:0.40};
+  var awFactor2  = factorMap3[awYears2] !== undefined ? factorMap3[awYears2] : awYears2 * 0.08;
+  var fx2 = fv("fx") || 62;
+  var totalRawUSD2 = 0;
+  lines.forEach(function(ln) { var ld2 = getLineLEDCost(ln.id); totalRawUSD2 += ld2.raw || 0; });
+  var aw2 = awYears2 > 0 ? awFactor2 * totalRawUSD2 * fx2 : 0;
+  var aftersalesSell = (pms2 + aw2) * vatexRatioForRealloc;
+
+  sharedPrice -= aftersalesSell;
+  if (sharedPrice < 0) sharedPrice = 0; // guard against float rounding
+
+  var numLines = lines.length;
+  if (numLines > 0) {
+    var perLineExtra = (aftersalesSell + honorTotal) / numLines;
+    for (var pli = 0; pli < lPrices.length; pli++) {
+      lPrices[pli] = (lPrices[pli] || 0) + perLineExtra;
+    }
+  } else {
+    sharedPrice += aftersalesSell + honorTotal;
   }
 
   function set2(id, v) { var e = D(id); if (e) e.innerHTML = v; }
@@ -2455,8 +2508,11 @@ function buildPrint() {
     // Labor & mobilization
     if (fv("c-mob") > 0) svcLines.push("Labor & Mobilization Cost");
 
-    // Structural per product line with editable description
+    // Structural per non-JIT product line with editable description
+    // (JIT lines keep their structural embedded in Product Line pricing — not listed here)
     lines.forEach(function(ln) {
+      var lnType = (D("pl-type-"+ln.id) && D("pl-type-"+ln.id).value) || "";
+      if (lnType.indexOf("jit") === 0) return;
       var svVal = fv("sv-"+ln.id);
       if (svVal > 0) {
         var lnName = (D("pln-name-"+ln.id)&&D("pln-name-"+ln.id).value)||("Line #"+(lines.indexOf(ln)+1));
@@ -2491,7 +2547,7 @@ function buildPrint() {
     trS.innerHTML =
       "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (lines.length+1) + "</td>"
       + "<td style='padding:12px 10px;border-bottom:1px solid #eee;vertical-align:top'>"
-        + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:6px'>Installation and Mobilization</div>"
+        + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:6px'>Structural and Mobilization</div>"
         + "<div style='font-size:9px;color:#666;line-height:2'>" + svcLines.join("<br>") + "</div>"
       + "</td>"
       + "<td style='padding:12px 14px;border-bottom:1px solid #eee;text-align:right;vertical-align:bottom;white-space:nowrap;width:150px'>"
