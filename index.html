@@ -128,6 +128,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
     <button class="btn-sm" id="btn-save-drive" onclick="saveQuoteToDrive()" style="background:#e0f2fe;color:#0891b2;border-color:#bae6fd">&#9729; Save to Drive</button>
     <button class="btn-sm" onclick="exportExcelData()" style="background:#d1fae5;color:#065f46;border-color:#6ee7b7">&#128202; Export Excel</button>
     <button class="btn-sm btn-print" onclick="buildPrint();window.print()">&#128438; Print / PDF</button>
+    <button class="btn-sm" onclick="resetWholeTool()" style="background:var(--red-lt);color:var(--red);border-color:#fecaca">&#8635; Reset</button>
     <button class="btn-sm btn-admin" onclick="openAdmin()">&#128274; Admin</button>
   </div>
 </div>
@@ -143,10 +144,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
   <div class="g3" style="margin-bottom:10px">
     <div class="field"><label>Addressed to (Attention)</label><input type="text" id="proj-attn" placeholder="e.g. Ms. Sarah Tan"></div>
     <div class="field"><label>Title / Position</label><input type="text" id="proj-attn-title" placeholder="e.g. Store Manager"></div>
-    <div class="field"><label>Quote number <span style="font-weight:400;color:var(--text3);font-size:10px">(auto, editable)</span></label>
+    <div class="field"><label>Quote number <span style="font-weight:400;color:var(--text3);font-size:10px">(auto-generated, locked)</span></label>
       <div style="display:flex;gap:6px">
-        <input type="text" id="proj-quote-num" placeholder="QU-19000" style="flex:1">
-        <button onclick="genNewQuoteNum()" style="padding:8px 10px;font-size:11px;border-radius:7px;border:1px solid var(--border2);background:#f5f5f7;cursor:pointer;font-family:inherit;color:var(--text2)">&#8635;</button>
+        <input type="text" id="proj-quote-num" placeholder="Select sales consultant" readonly style="flex:1;background:#f5f5f7;color:var(--text2);cursor:not-allowed">
+        <button onclick="genNewQuoteNum()" title="Get next number in sequence" style="padding:8px 10px;font-size:11px;border-radius:7px;border:1px solid var(--border2);background:#f5f5f7;cursor:pointer;font-family:inherit;color:var(--text2)">&#8635;</button>
       </div>
     </div>
   </div>
@@ -170,7 +171,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
 <div class="card">
   <div class="card-hdr">
     <div class="card-icon" style="background:#e0f2fe">&#128250;</div>
-    <span class="sec-lbl">Product lines</span>
+    <span class="sec-lbl">Product lines <span style="font-weight:400;font-size:10px;color:var(--text3)">(LED wall or Ready-to-Buy item &mdash; choose per line)</span></span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
       <input type="number" id="fx" min="1" step=".5" value="62" oninput="calcAll()" style="display:none">
       <button class="btn-add" id="btn-add" onclick="addLine()">+ Add product line</button>
@@ -283,21 +284,6 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
 
 
 <div class="card">
-  <div class="card-hdr">
-    <div class="card-icon" style="background:#f0f4ff">&#128247;</div>
-    <span class="sec-lbl">Attached Photos <span style="font-weight:400;font-size:10px;color:var(--text3)">(one per product line — shown below each item in the quotation)</span></span>
-    <button onclick="document.getElementById('photo-upload-input').click()"
-      style="margin-left:auto;font-size:10px;padding:4px 12px;border-radius:6px;border:1px dashed var(--border2);background:#f5f5f7;cursor:pointer;font-family:inherit;color:var(--text2)">
-      + Add Photo
-    </button>
-    <input type="file" id="photo-upload-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this)">
-  </div>
-  <div id="photo-preview-grid" style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;min-height:20px">
-    <div style="font-size:11px;color:var(--text3);padding:8px 0" id="photo-empty-msg">No photos attached. Add one photo per product line — Photo 1 = Line 1, Photo 2 = Line 2, etc.</div>
-  </div>
-</div>
-
-<div class="card">
   <div class="card-hdr"><div class="card-icon" style="background:#f0f0f4">&#128736;</div><span class="sec-lbl">After-sales services</span></div>
 
   <!-- Additional Warranty -->
@@ -393,8 +379,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       <div class="field" style="flex:1;min-width:160px"><label>Target (PHP, with VAT 12%)</label>
         <input type="number" id="target-vatwith" min="0" step="1000" placeholder="e.g. 550,000" oninput="calcFromTarget('vatwith')" style="border-color:#a78bfa">
       </div>
+      <div style="font-size:12px;color:var(--text3);padding-bottom:10px">or</div>
+      <div class="field" style="flex:1;min-width:140px"><label>Target profit % <span style="font-weight:400;color:var(--text3);font-size:10px">(margin, of VAT-ex price)</span></label>
+        <input type="number" id="target-marginpct" min="0" max="99" step="0.5" placeholder="e.g. 37" oninput="calcFromTargetPct()" style="border-color:#a78bfa">
+      </div>
       <div id="target-result" class="target-result" style="flex:1;min-width:160px;padding:8px 12px">
-        <div style="color:var(--text3);font-size:10px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em">Required margin</div>
+        <div style="color:var(--text3);font-size:10px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em">Required profit %</div>
         <div style="font-size:18px;font-weight:700" id="target-margin-pct">&mdash;</div>
         <div style="font-size:10px;color:var(--text3)" id="target-margin-note"></div>
         <button id="target-apply-btn" onclick="applyTargetMargin()" class="btn btn-primary" style="margin-top:6px;font-size:11px;padding:4px 12px;width:100%;display:none">&#10003; Apply this margin</button>
@@ -452,8 +442,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
     <tbody>
       <tr><td class="cat" colspan="2">A. Product lines (LED + shipment)</td></tr>
       <tbody id="sum-lines-rows"></tbody>
-      <tr><td class="cat" colspan="2">B. Honorarium (VAT-inclusive, no markup)</td></tr>
-      <tr><td style="padding-left:12px;color:var(--text2)">Total honorarium (with 12% VAT)</td><td id="sum-honor">&mdash;</td></tr>
+      <tr><td class="cat" colspan="2">B. Honorarium (referral/commission, no markup)</td></tr>
+      <tr><td style="padding-left:12px;color:var(--text2)">Honorarium (VAT-ex, raw)</td><td id="sum-honor">&mdash;</td></tr>
+      <tr><td style="padding-left:12px;font-size:10px;color:var(--text3)">+ 12% VAT = <span id="sum-honor-vatinc">&mdash;</span> when included in final total below</td><td></td></tr>
       <tr><td class="cat" colspan="2">C. Shared costs</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Electrical</td><td id="sum-elec">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Structural</td><td id="sum-struct">&mdash;</td></tr>
@@ -462,11 +453,16 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       <tr><td style="padding-left:12px;color:var(--text2)">Mobilization / labor</td><td id="sum-mob">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">Miscellaneous</td><td id="sum-misc">&mdash;</td></tr>
       <tr><td style="padding-left:12px;color:var(--text2)">PMS + warranty</td><td id="sum-aftersales">&mdash;</td></tr>
-      <tr class="tot"><td>Total bare cost</td><td id="sum-bare">&mdash;</td></tr>
-      <tr class="tot"><td>Profit (<span id="sum-margin-pct">30</span>% of bare cost)</td><td id="sum-profit">&mdash;</td></tr>
+      <tr class="tot"><td>Total bare cost (LED wall)</td><td id="sum-bare">&mdash;</td></tr>
+      <tr class="tot"><td>Profit (<span id="sum-margin-pct">30</span>% margin, of selling price)</td><td id="sum-profit">&mdash;</td></tr>
+      <tr><td class="cat" colspan="2">D. Ready-to-Buy Products (fixed price, no markup)</td></tr>
+      <tbody id="sum-rtb-rows"></tbody>
+      <tr class="tot" id="sum-rtb-barecost-row" style="display:none"><td>Total bare cost (RTB)</td><td id="sum-rtb-barecost">&mdash;</td></tr>
+      <tr class="tot" id="sum-grand-bare-row" style="display:none;background:#fafaf8"><td>Grand Total Bare Cost <span style="font-weight:400;font-size:10px;color:var(--text3)">(LED + RTB, for reference &mdash; not used for margin)</span></td><td id="sum-grand-bare">&mdash;</td></tr>
       <tr class="tot"><td>Selling price before discount (VAT ex, incl. honorarium)</td><td id="sum-vatex-predisc">&mdash;</td></tr>
-      <tr class="tot" id="sum-discount-row" style="display:none"><td style="color:var(--red)">Discount</td><td id="sum-discount" style="color:var(--red)">&mdash;</td></tr>
+      <tr class="tot" id="sum-discount-row" style="display:none"><td style="color:var(--red)">Discount <span style="font-weight:400;font-size:10px;color:var(--text3)">(RTB excluded)</span></td><td id="sum-discount" style="color:var(--red)">&mdash;</td></tr>
       <tr class="tot vat"><td>Suggested selling price (VAT ex, incl. honorarium)</td><td id="sum-vatex">&mdash;</td></tr>
+      <tr class="tot" id="sum-overall-profit-row" style="display:none;background:var(--amber-lt)"><td>Overall Profit <span style="font-weight:400;font-size:10px;color:#92600a">(all product lines, margin % of VAT-ex selling price, less grand total bare cost)</span></td><td id="sum-overall-profit">&mdash;</td></tr>
       <tr class="tot vat main"><td><strong>With VAT 12% &mdash; for client quotation</strong></td><td id="sum-vatwith"><strong>&mdash;</strong></td></tr>
     </tbody>
   </table>
@@ -500,6 +496,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
         <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">&#9997; Sales Consultant Signatures</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Upload each consultant's e-signature once &mdash; it'll auto-appear on the printed quotation whenever they're selected under "Prepared by". Saved in this browser.</div>
         <div id="admin-signatures"></div>
+      </div>
+      <div style="padding:12px 14px;background:#f5f5f7;border-radius:8px;margin-bottom:14px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">&#128230; Ready-to-Buy (RTB) Catalog</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Edit product name, VAT-inclusive price, and BloomLED's bare cost per item. These auto-fill when a consultant picks the product from the catalog dropdown &mdash; they don't need to touch these numbers. Click "Save RTB Catalog" below to persist.</div>
+        <div id="admin-rtb-catalog"></div>
+        <button onclick="saveRTBCatalog()" class="btn btn-primary" style="font-size:12px;padding:6px 14px;margin-top:8px">Save RTB Catalog</button>
       </div>
       <div id="admin-tables"></div>
       <button class="btn btn-primary" onclick="saveAdmin()">Save changes</button>
@@ -628,8 +630,26 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       </tr>
     </table>
 
+    <!-- Warranty & Support + Terms & Conditions: kept together as one pagination unit,
+         so they either both stay on page 1 or both move to page 2 together -->
+    <div id="pq-post-lineitems-block">
+    <div style="margin-top:18px;page-break-inside:avoid">
+      <div style="display:inline-block;background:#d3e862;color:#121214;font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;margin-bottom:8px">WARRANTY &amp; SUPPORT</div>
+      <div style="font-size:9px;color:#444;line-height:1.9">
+        <div id="pq-warranty-lines"></div>
+        <strong>Training and Support:</strong> Included
+      </div>
+      <div style="font-size:9px;color:#444;line-height:1.9;margin-top:8px">
+        <strong>Turnaround Time:</strong><br>
+        &bull; Max of 1 hour to acknowledge and quick diagnose via messaging apps.<br>
+        &bull; Max of 2 calendar days to physically diagnose and repair.<br>
+        &bull; Max of 4 calendar days to repair &amp; replacement of parts.
+      </div>
+      <div style="font-size:8px;color:#999;font-style:italic;margin-top:8px">*Warranty: 2 years for LED wall / 1 year for RTB.</div>
+    </div>
+
     <!-- Terms + Signatures: always starts on its own page (content is long) -->
-    <div id="pq-terms-block" style="margin-top:20px;page-break-inside:avoid">
+    <div id="pq-terms-block" style="margin-top:20px">
       <div style="display:inline-block;background:#d3e862;color:#121214;font-size:7px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;margin-bottom:8px">TERMS &amp; CONDITIONS</div>
       <ol style="padding-left:16px;color:#444;font-size:8.5px;line-height:1.65;margin:0">
         <li><strong>Product &amp; Services.</strong> BloomLED to provide LED, delivery, installation, training, and customer support per signed P.O./Quotation and agreed schedule. Buyer-requested changes may incur additional charges.</li>
@@ -662,7 +682,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       <div style="margin-top:10px;font-size:8.5px;color:#444;font-style:italic">To confirm your order, please sign below to indicate your acceptance of the proposal.</div>
     </div>
 
-    <!-- Signatures -->
+    <!-- Signatures + Footer logo — kept together as one unit so the logo never gets orphaned alone on a new page -->
+    <div style="page-break-inside:avoid">
     <div style="margin-top:28px;display:grid;grid-template-columns:1fr 40px 1fr">
       <div>
         <div style="height:40px"></div>
@@ -687,6 +708,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
     <!-- Footer with actual bloomled logo -->
     <div style="margin-top:24px;text-align:right">
       <img src="data:image/png;base64,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" style="height:52px;width:auto" alt="bloomled">
+    </div>
+
+    </div>
+
     </div>
 
   </div>
@@ -836,6 +861,8 @@ const FAM = {
 };
 
 var lines = [], lineCount = 0, _lastBareCost = 0;
+var rtbItems = [], rtbItemCount = 0;
+var rtbPhotos = {}; // {itemId: {name, dataUrl}}
 
 function php(n) { return "&#8369;" + Math.round(n).toLocaleString("en-PH"); }
 function usdF(n) { return "$" + n.toFixed(2); }
@@ -848,9 +875,7 @@ function setR(id, v) { var e = D(id); if (e) e.innerHTML = v > 0 ? php(v) : "&md
 // Uses only double-quoted strings — no escaping issues
 // ═══════════════════════════════════════════════════
 function makeLineCard(id, num) {
-  var rb = num > 1
-    ? "<button class=\"pl-remove\" onclick=\"event.stopPropagation();removeLine('" + id + "')\">&#215;</button>"
-    : "";
+  var rb = "<button class=\"pl-remove\" onclick=\"event.stopPropagation();removeLine('" + id + "')\">&#215;</button>";
 
   var typeOpts = "<option value=''>Select type</option>"
     + "<optgroup label='Fixed Cabinet'>"
@@ -888,6 +913,13 @@ function makeLineCard(id, num) {
 
   // Body
   h += "<div class='pl-body' id='plb-" + id + "'>";
+
+  // Product type selector (LED Wall / RTB Product) — lets this line switch kinds
+  h += "<div class='field'><label>Product type</label>"
+     + "<select id='pl-kind-" + id + "' onchange=\"switchLineType('" + id + "','led')\">"
+     + "<option value='led' selected>LED Wall</option>"
+     + "<option value='rtb'>Ready-to-Buy Product</option>"
+     + "</select></div>";
 
   // Specs
   h += "<div class='g3'>";
@@ -1002,6 +1034,17 @@ function makeLineCard(id, num) {
      + "<div style='width:110px;text-align:right;font-size:12px;color:var(--cyan);font-weight:600' id='pl-air-php-" + id + "'>&mdash;</div>"
      + "</div></div>";
 
+  // Product photo (per line, matches RTB card pattern)
+  h += "<div style='padding:10px 12px;background:#f5f5f7;border-radius:8px;border:1px solid var(--border);margin-bottom:10px'>"
+     + "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px'>"
+     + "<span style='font-size:11px;font-weight:600;color:var(--text2)'>&#128247; Product photo <span style='font-weight:400;color:var(--text3)'>(shown on print quotation)</span></span>"
+     + "<button type='button' onclick=\"document.getElementById('pl-photo-input-" + id + "').click()\""
+     + " style='font-size:10px;padding:3px 10px;border-radius:5px;border:1px dashed var(--border2);background:var(--white);cursor:pointer;color:var(--text2);font-family:inherit'>+ Add Photo</button>"
+     + "<input type='file' id='pl-photo-input-" + id + "' accept='image/*' style='display:none' onchange=\"handleLinePhotoUpload('" + id + "',this)\">"
+     + "</div>"
+     + "<div id='pl-photo-preview-" + id + "'></div>"
+     + "</div>";
+
   // Line bare cost
   h += "<div class='line-bare'>"
      + "<div><div class='line-bare-label'>Product line bare cost</div>"
@@ -1013,16 +1056,20 @@ function makeLineCard(id, num) {
   return h;
 }
 
-function addLine() {
-  if (lines.length >= 5) { alert("Maximum 5 product lines."); return; }
+var MAX_PRODUCT_LINES = 8; // combined cap across LED + RTB lines
+
+function addLine(insertBeforeNode) {
+  if (lines.length + rtbItems.length >= MAX_PRODUCT_LINES) { alert("Maximum " + MAX_PRODUCT_LINES + " product lines."); return; }
   var id = "l" + (++lineCount);
-  var num = lines.length + 1;
-  lines.push({id:id, num:num, purpose:null});
+  lines.push({id:id, num:0, purpose:null});
   var wrap = document.createElement("div");
   wrap.id = "plw-" + id;
-  wrap.innerHTML = makeLineCard(id, num);
-  D("pl-container").appendChild(wrap);
-  if (lines.length >= 5) D("btn-add").style.display = "none";
+  wrap.innerHTML = makeLineCard(id, lines.length);
+  if (insertBeforeNode) { D("pl-container").insertBefore(wrap, insertBeforeNode); }
+  else { D("pl-container").appendChild(wrap); }
+  renderLinePhotoPreview(id);
+  renumberProductLines();
+  if (lines.length + rtbItems.length >= MAX_PRODUCT_LINES) D("btn-add").style.display = "none";
   refreshStruct();
   calcAll();
 }
@@ -1030,12 +1077,11 @@ function addLine() {
 function removeLine(id) {
   var idx = lines.findIndex(function(l){return l.id===id;});
   if (idx < 0) return;
+  if (lines.length + rtbItems.length <= 1) { alert("At least one product line is required."); return; }
   lines.splice(idx, 1);
+  delete linePhotos[id];
   var w = D("plw-" + id); if (w) w.remove();
-  lines.forEach(function(l, i) {
-    l.num = i + 1;
-    var n = D("pln-" + l.id); if (n) n.textContent = i + 1;
-  });
+  renumberProductLines();
   D("btn-add").style.display = "";
   refreshStruct();
   calcAll();
@@ -1046,6 +1092,297 @@ function toggleLine(id) {
   var open = b.style.display !== "none";
   b.style.display = open ? "none" : "flex";
   if (t) t.innerHTML = open ? "&#9654;" : "&#9660;";
+}
+
+// ══════════════════════════════════════════════════════
+// READY-TO-BUY (RTB) PRODUCTS — fixed-price items, e.g. smart whiteboards.
+// No margin/markup calculation: the unit price is already BloomLED's selling
+// price, inclusive of Metro Manila delivery. Optional add-ons: miscellaneous
+// fee, delivery fee outside Metro Manila, and commission (commission stays
+// hidden on the printed quote, like Honorarium).
+// ══════════════════════════════════════════════════════
+var RTB_CATALOG = [
+  {key:"custom", name:"", price:null, bareCost:null, label:"\u2014 Custom / Other RTB Product \u2014"},
+  {key:"swb65-android",   name:"Smart Whiteboard 360 \u2014 65\" 4K, Android 14 (8GB/128GB)",                          price:100000, bareCost:57427.20,  label:"65\" \u2014 4K, Android 14 \u2014 \u20b1100,000"},
+  {key:"swb65-win",       name:"Smart Whiteboard 360 \u2014 65\" 4K, Android 14 + Windows 11 Pro (8GB/128GB, 512GB SSD)", price:145000, bareCost:57427.20,  label:"65\" \u2014 4K, Android + Windows 11 Pro \u2014 \u20b1145,000"},
+  {key:"swb75-android",   name:"Smart Whiteboard 360 \u2014 75\" 4K, Android 14 (8GB/128GB)",                          price:115000, bareCost:70983.58,  label:"75\" \u2014 4K, Android 14 \u2014 \u20b1115,000"},
+  {key:"swb75-win",       name:"Smart Whiteboard 360 \u2014 75\" 4K, Android 14 + Windows 11 Pro (8GB/128GB, 512GB SSD)", price:160000, bareCost:70983.58,  label:"75\" \u2014 4K, Android + Windows 11 Pro \u2014 \u20b1160,000"},
+  {key:"swb86-android",   name:"Smart Whiteboard 360 \u2014 86\" 4K, Android 14 (8GB/128GB)",                          price:125000, bareCost:74940.00,  label:"86\" \u2014 4K, Android 14 \u2014 \u20b1125,000"},
+  {key:"swb86-win",       name:"Smart Whiteboard 360 \u2014 86\" 4K, Android 14 + Windows 11 Pro (8GB/128GB, 512GB SSD)", price:165000, bareCost:100489.20, label:"86\" \u2014 4K, Android + Windows 11 Pro \u2014 \u20b1165,000"},
+  {key:"iposter-p25",     name:"P2.5 LED iPoster 0.64m W x 1.92m H",                                             price:145000, bareCost:87716.00,  label:"P2.5 LED iPoster 0.64m x 1.92m \u2014 \u20b1145,000"},
+  {key:"kiosk-55",        name:"55\" Digital Floor Standing Kiosk",                                              price:98000,  bareCost:55642.00,  label:"55\" Digital Floor Standing Kiosk \u2014 \u20b198,000"}
+];
+var RTB_DONGLE_PRICE = 6000;
+try {
+  var _rtbSaved = localStorage.getItem("blm_rtb_catalog_v1");
+  if (_rtbSaved) {
+    var _rtbOverrides = JSON.parse(_rtbSaved);
+    RTB_CATALOG.forEach(function(c) {
+      if (_rtbOverrides[c.key]) {
+        c.name = _rtbOverrides[c.key].name;
+        c.price = _rtbOverrides[c.key].price;
+        c.bareCost = _rtbOverrides[c.key].bareCost;
+        c.label = c.label.replace(/\u2014 \u20b1[\d,]+$/, "\u2014 \u20b1" + Math.round(c.price).toLocaleString("en-PH"));
+      }
+    });
+  }
+} catch(e) {}
+
+function makeRTBCard(id) {
+  var h = "";
+  h += "<div class='pl-card' id='rtbc-" + id + "'>";
+  h += "<div class='pl-hdr' onclick=\"toggleRTB('" + id + "')\">";
+  h += "<div class='pl-num' id='rtbn-" + id + "' style='background:var(--amber)'>&#128230;</div>";
+  h += "<input class='pl-name-input' id='rtbn-name-" + id + "' value='RTB Product' placeholder='e.g. Interactive Smart Whiteboard 65\"'"
+     + " onclick='event.stopPropagation()' oninput='calcAll()'>";
+  h += "<span style='font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber-lt);color:#92600a;margin-right:6px'>RTB</span>";
+  h += "<span class='pl-summary' id='rtbs-" + id + "'>Not configured</span>";
+  h += "<button class='pl-remove' onclick=\"event.stopPropagation();removeRTBLine('" + id + "')\">&#215;</button>";
+  h += "<span class='pl-toggle' id='rtbt-" + id + "'>&#9660;</span>";
+  h += "</div>";
+
+  h += "<div class='pl-body' id='rtbb-" + id + "'>";
+
+  // Product type selector (LED Wall / RTB Product) — lets this line switch kinds
+  h += "<div class='field'><label>Product type</label>"
+     + "<select id='pl-kind-" + id + "' onchange=\"switchLineType('" + id + "','rtb')\">"
+     + "<option value='led'>LED Wall</option>"
+     + "<option value='rtb' selected>Ready-to-Buy Product</option>"
+     + "</select></div>";
+
+  h += "<div class='field'><label>Catalog product <span style='font-weight:400;color:var(--text3);font-size:10px'>(auto-fills name &amp; price &mdash; still editable after)</span></label>";
+  h += "<select id='rtb-catalog-" + id + "' onchange=\"applyRTBCatalog('" + id + "')\">";
+  RTB_CATALOG.forEach(function(c) {
+    h += "<option value='" + c.key + "'>" + c.label + "</option>";
+  });
+  h += "</select></div>";
+
+  h += "<div class='g3'>";
+  h += "<div class='field'><label>Quantity</label>"
+     + "<input type='number' id='rtb-qty-" + id + "' min='1' step='1' value='1' oninput='calcAll()'></div>";
+  h += "<div class='field'><label>Unit price (PHP, fixed, <strong>VAT-inclusive</strong> &mdash; enter the catalog price)</label>"
+     + "<input type='number' id='rtb-price-" + id + "' min='0' step='500' placeholder='e.g. 85000' oninput='calcAll()'></div>";
+  h += "<div class='field'><label>Subtotal (Qty &times; Unit price)</label>"
+     + "<input type='number' id='rtb-subtotal-" + id + "' readonly></div>";
+  h += "</div>";
+
+  h += "<label style='display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f5f5f7;border-radius:8px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:10px'>"
+     + "<input type='checkbox' id='rtb-dongle-" + id + "' onchange='calcAll()' style='width:16px;height:16px;accent-color:var(--purple)'>"
+     + " + Wireless dongle add-on <strong>(+\u20b1" + RTB_DONGLE_PRICE.toLocaleString("en-PH") + ")</strong></label>";
+
+  h += "<div class='g3'>";
+  h += "<div class='field'><label>Additional miscellaneous fee <span style='font-weight:400;color:var(--text3);font-size:10px'>(optional)</span></label>"
+     + "<input type='number' id='rtb-misc-" + id + "' min='0' step='100' placeholder='0' oninput='calcAll()'></div>";
+  h += "<div class='field'><label>Commission <span style='font-weight:400;color:var(--text3);font-size:10px'>(optional, hidden on quote)</span></label>"
+     + "<input type='number' id='rtb-comm-" + id + "' min='0' step='100' placeholder='0' oninput='calcAll()'></div>";
+  h += "<div class='field'><label>&nbsp;</label>"
+     + "<label style='display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--text2);cursor:pointer'>"
+     + "<input type='checkbox' id='rtb-outsidemm-" + id + "' onchange='calcAll()' style='width:16px;height:16px;accent-color:var(--purple)'>"
+     + " Outside Metro Manila?</label></div>";
+  h += "</div>";
+
+  h += "<div class='field' id='rtb-delivery-wrap-" + id + "' style='display:none'>"
+     + "<label>Delivery fee <span style='font-weight:400;color:var(--text3);font-size:10px'>(outside Metro Manila)</span></label>"
+     + "<input type='number' id='rtb-delivery-" + id + "' min='0' step='100' placeholder='0' oninput='calcAll()'></div>";
+
+  h += "<input type='hidden' id='rtb-barecost-" + id + "' value=''>";
+
+  h += "<div style='padding:10px 12px;background:#f5f5f7;border-radius:8px;border:1px solid var(--border);margin-bottom:10px'>"
+     + "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px'>"
+     + "<span style='font-size:11px;font-weight:600;color:var(--text2)'>&#128247; Product photo <span style='font-weight:400;color:var(--text3)'>(shown on print quotation)</span></span>"
+     + "<button type='button' onclick=\"document.getElementById('rtb-photo-input-" + id + "').click()\""
+     + " style='font-size:10px;padding:3px 10px;border-radius:5px;border:1px dashed var(--border2);background:var(--white);cursor:pointer;color:var(--text2);font-family:inherit'>+ Add Photo</button>"
+     + "<input type='file' id='rtb-photo-input-" + id + "' accept='image/*' style='display:none' onchange=\"handleRTBPhotoUpload('" + id + "',this)\">"
+     + "</div>"
+     + "<div id='rtb-photo-preview-" + id + "'></div>"
+     + "</div>";
+
+  h += "<div class='line-bare'>"
+     + "<div><div class='line-bare-label'>RTB item total</div>"
+     + "<div class='line-bare-note'>Unit price &times; qty + dongle + misc + delivery (outside MM) + commission</div></div>"
+     + "<div class='line-bare-val' id='rtb-total-" + id + "'>&mdash;</div>"
+     + "</div>";
+  h += "</div></div>";
+  return h;
+}
+
+function applyRTBCatalog(id) {
+  var sel = D("rtb-catalog-" + id);
+  var key = sel ? sel.value : "custom";
+  var item = RTB_CATALOG.find(function(c){ return c.key === key; });
+  if (!item || item.key === "custom") return;
+  var nameEl = D("rtbn-name-" + id); if (nameEl) nameEl.value = item.name;
+  var priceEl = D("rtb-price-" + id); if (priceEl) priceEl.value = item.price;
+  var bareCostEl = D("rtb-barecost-" + id); if (bareCostEl && item.bareCost != null) bareCostEl.value = item.bareCost;
+  calcAll();
+}
+
+function addRTBLine(insertBeforeNode) {
+  if (lines.length + rtbItems.length >= MAX_PRODUCT_LINES) { alert("Maximum " + MAX_PRODUCT_LINES + " product lines."); return; }
+  var id = "r" + (++rtbItemCount);
+  rtbItems.push({id: id});
+  var wrap = document.createElement("div");
+  wrap.id = "rtbw-" + id;
+  wrap.innerHTML = makeRTBCard(id);
+  if (insertBeforeNode) { D("pl-container").insertBefore(wrap, insertBeforeNode); }
+  else { D("pl-container").appendChild(wrap); }
+  renderRTBPhotoPreview(id);
+  renumberProductLines();
+  if (lines.length + rtbItems.length >= MAX_PRODUCT_LINES) D("btn-add").style.display = "none";
+  calcAll();
+}
+
+function removeRTBLine(id) {
+  var idx = rtbItems.findIndex(function(r){return r.id===id;});
+  if (idx < 0) return;
+  if (lines.length + rtbItems.length <= 1) { alert("At least one product line is required."); return; }
+  rtbItems.splice(idx, 1);
+  delete rtbPhotos[id];
+  var w = D("rtbw-" + id); if (w) w.remove();
+  renumberProductLines();
+  D("btn-add").style.display = "";
+  calcAll();
+}
+
+// Walks the unified container in DOM order and assigns "Product Line N" numbering
+// across BOTH LED and RTB cards, regardless of type.
+function renumberProductLines() {
+  var container = D("pl-container");
+  if (!container) return;
+  var n = 0;
+  Array.prototype.forEach.call(container.children, function(wrap) {
+    n++;
+    if (wrap.id.indexOf("plw-") === 0) {
+      var id = wrap.id.slice(4);
+      var line = lines.find(function(l){ return l.id === id; });
+      if (line) line.num = n;
+      var badge = D("pln-" + id); if (badge) badge.textContent = n;
+    } else if (wrap.id.indexOf("rtbw-") === 0) {
+      var rid = wrap.id.slice(5);
+      var badge2 = D("rtbn-" + rid); if (badge2) badge2.textContent = n;
+    }
+  });
+}
+
+// Switches a product line between LED Wall and RTB Product, preserving its position
+// in the list. Any previously entered LED-specific or RTB-specific data is discarded
+// (the two are fundamentally different pricing models — fixed price vs. cost+margin).
+function switchLineType(id, currentKind) {
+  var sel = D("pl-kind-" + id);
+  var newKind = sel ? sel.value : currentKind;
+  if (newKind === currentKind) return;
+
+  var oldWrapId = currentKind === "led" ? "plw-" + id : "rtbw-" + id;
+  var oldWrap = D(oldWrapId);
+  var nextSibling = oldWrap ? oldWrap.nextSibling : null;
+
+  if (currentKind === "led") {
+    var idx = lines.findIndex(function(l){ return l.id === id; });
+    if (idx >= 0) lines.splice(idx, 1);
+    delete linePhotos[id];
+  } else {
+    var idx2 = rtbItems.findIndex(function(r){ return r.id === id; });
+    if (idx2 >= 0) rtbItems.splice(idx2, 1);
+    delete rtbPhotos[id];
+  }
+  if (oldWrap) oldWrap.remove();
+
+  if (newKind === "led") { addLine(nextSibling); }
+  else { addRTBLine(nextSibling); }
+}
+
+function toggleRTB(id) {
+  var b = D("rtbb-" + id), t = D("rtbt-" + id);
+  var open = b.style.display !== "none";
+  b.style.display = open ? "none" : "flex";
+  if (t) t.innerHTML = open ? "&#9654;" : "&#9660;";
+}
+
+function getRTBLineTotal(id) {
+  var qty = parseInt((D("rtb-qty-"+id) && D("rtb-qty-"+id).value) || 1) || 1;
+  // Unit price and dongle are entered/catalog VAT-INCLUSIVE (matches the official price list).
+  // Converted to VAT-exclusive here so they flow correctly through the rest of the pipeline,
+  // which applies VAT once at the very end — otherwise VAT would be charged twice.
+  var priceVATInc = fv("rtb-price-"+id);
+  var price = priceVATInc / 1.12;
+  var dongleVATInc = (D("rtb-dongle-"+id) && D("rtb-dongle-"+id).checked) ? RTB_DONGLE_PRICE : 0;
+  var dongle = dongleVATInc / 1.12;
+  var misc = fv("rtb-misc-"+id);
+  var comm = fv("rtb-comm-"+id);
+  var outsideMM = D("rtb-outsidemm-"+id) && D("rtb-outsidemm-"+id).checked;
+  var delivery = outsideMM ? fv("rtb-delivery-"+id) : 0;
+  var subtotal = qty * price;
+  var total = subtotal + dongle + misc + delivery + comm;
+  var bareCost = fv("rtb-barecost-"+id); // internal cost tracking only — never affects selling price/total above
+  return {qty: qty, price: price, priceVATInc: priceVATInc, dongle: dongle, dongleVATInc: dongleVATInc,
+          misc: misc, comm: comm, outsideMM: outsideMM, delivery: delivery, subtotal: subtotal, total: total, bareCost: bareCost};
+}
+
+function handleRTBPhotoUpload(id, input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    rtbPhotos[id] = {name: file.name, dataUrl: e.target.result};
+    renderRTBPhotoPreview(id);
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+function renderRTBPhotoPreview(id) {
+  var wrap = D("rtb-photo-preview-" + id);
+  if (!wrap) return;
+  var photo = rtbPhotos[id];
+  if (!photo) {
+    wrap.innerHTML = "<div style='font-size:10px;color:var(--text3)'>No photo attached.</div>";
+    return;
+  }
+  wrap.innerHTML = "<div style='position:relative;width:110px'>"
+    + "<img src='" + photo.dataUrl + "' style='width:100%;height:74px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block'>"
+    + "<button onclick=\"removeRTBPhoto('" + id + "')\" title='Remove'"
+    + " style='position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center'>&#215;</button>"
+    + "</div>";
+}
+
+function removeRTBPhoto(id) {
+  delete rtbPhotos[id];
+  renderRTBPhotoPreview(id);
+}
+
+// ── Per-line photo attachment for LED product lines (mirrors RTB photo pattern) ──
+var linePhotos = {}; // {lineId: {name, dataUrl}}
+
+function handleLinePhotoUpload(id, input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    linePhotos[id] = {name: file.name, dataUrl: e.target.result};
+    renderLinePhotoPreview(id);
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+function renderLinePhotoPreview(id) {
+  var wrap = D("pl-photo-preview-" + id);
+  if (!wrap) return;
+  var photo = linePhotos[id];
+  if (!photo) {
+    wrap.innerHTML = "<div style='font-size:10px;color:var(--text3)'>No photo attached.</div>";
+    return;
+  }
+  wrap.innerHTML = "<div style='position:relative;width:110px'>"
+    + "<img src='" + photo.dataUrl + "' style='width:100%;height:74px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block'>"
+    + "<button onclick=\"removeLinePhoto('" + id + "')\" title='Remove'"
+    + " style='position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center'>&#215;</button>"
+    + "</div>";
+}
+
+function removeLinePhoto(id) {
+  delete linePhotos[id];
+  renderLinePhotoPreview(id);
 }
 
 function toggleBK(id) {
@@ -1431,23 +1768,38 @@ function exportExcelData() {
   var aw        = awYears > 0 ? awFactor * totalRawUSD * fx : 0;
   var aftersales = pms + aw;
 
+  // ── Ready-to-Buy items — fixed price, no margin, not subject to discount ──
+  var rtbTotal = 0;
+  var rtbBareCostTotal = 0;
+  var rtbRowsData = [];
+  rtbItems.forEach(function(r) {
+    var rt = getRTBLineTotal(r.id);
+    rtbTotal += rt.total;
+    rtbBareCostTotal += rt.bareCost || 0;
+    rtbRowsData.push({
+      name: (D("rtbn-name-"+r.id) && D("rtbn-name-"+r.id).value) || "RTB Product",
+      qty: rt.qty, price: rt.price, priceVATInc: rt.priceVATInc, dongle: rt.dongle, misc: rt.misc, delivery: rt.delivery, comm: rt.comm, total: rt.total, bareCost: rt.bareCost || 0
+    });
+  });
+
   // ── Totals ──────────────────────────────────────────────────────────────
   var bareCost = totalLineBare + elecTotal + ocular + delivery + mob + miscTotal + aftersales;
   var honorVAT = honorTotal * 1.12;
   var profitAmt = bareCost * (margin / 100);
-  var vatexPreDiscount = bareCost + profitAmt;
+  var vatexMarginOnly = bareCost + profitAmt;
+  var vatexPreDiscount = vatexMarginOnly + rtbTotal;
 
   var discType = (D("disc-type") && D("disc-type").value) || "pct";
   var discValue = fv("disc-value");
-  var discountAmt = discType === "fixed" ? discValue : vatexPreDiscount * (discValue / 100);
+  var discountAmt = discType === "fixed" ? discValue : vatexMarginOnly * (discValue / 100);
   if (discountAmt < 0) discountAmt = 0;
-  if (discountAmt > vatexPreDiscount) discountAmt = vatexPreDiscount;
+  if (discountAmt > vatexMarginOnly) discountAmt = vatexMarginOnly;
 
   var vatex = vatexPreDiscount - discountAmt;
   var vatAmt = vatex * 0.12;
   var vatWith = vatAmt + vatex + honorVAT;
 
-  var vatexRatio = bareCost > 0 ? vatexPreDiscount / bareCost : 1;
+  var vatexRatio = bareCost > 0 ? vatexMarginOnly / bareCost : 1;
   var totalLEDShipOnly = totalLineBare - totalStruct; // pure LED+shipment, excludes structural
   var vatexPreDiscountDisplay = vatexPreDiscount + honorTotal; // display-only: VAT-ex incl. honorarium
   var vatexDisplay = vatex + honorTotal; // display-only: VAT-ex (post-discount) incl. honorarium
@@ -1505,12 +1857,25 @@ function exportExcelData() {
     [],
     ["Total Bare Cost", round2(bareCost)],
     ["Profit (" + margin + "% of bare cost)", round2(profitAmt)],
+    ["D. Ready-to-Buy Products (fixed price, no markup)", round2(rtbTotal)]
+  ];
+  rtbRowsData.forEach(function(r) {
+    s3.push(["   " + r.name + " (" + r.qty + " \u00d7 \u20b1" + r.priceVATInc.toLocaleString("en-PH") + " VAT-inc)", round2(r.total)]);
+    if (r.bareCost > 0) s3.push(["      \u2014 bare cost (BloomLED's cost)", round2(r.bareCost)]);
+  });
+  if (rtbBareCostTotal > 0) {
+    s3.push([]);
+    s3.push(["RTB Bare Cost Total (for reference)", round2(rtbBareCostTotal)]);
+    s3.push(["Grand Total Bare Cost (LED + RTB, for reference \u2014 not used for margin)", round2(bareCost + rtbBareCostTotal)]);
+  }
+  s3 = s3.concat([
+    [],
     ["Selling Price before Discount (VAT ex, incl. honorarium)", round2(vatexPreDiscountDisplay)],
-    ["Discount", round2(discountAmt) * -1],
+    ["Discount (RTB excluded)", round2(discountAmt) * -1],
     ["Suggested Selling Price (VAT ex, incl. honorarium)", round2(vatexDisplay)],
     ["VAT 12%", round2(vatAmt)],
     ["TOTAL with VAT \u2014 for client quotation", round2(vatWith)]
-  ];
+  ]);
   var ws3 = XLSX.utils.aoa_to_sheet(s3);
   ws3["!cols"] = [{wch: 44}, {wch: 20}];
 
@@ -1563,7 +1928,7 @@ function collectQuoteState() {
                 "c-ocular","c-delivery","c-mob",
                 "c-pms-qty","c-pms-rate","c-aw-years",
                 "disc-type","disc-value",
-                "target-vatex","target-vatwith"];
+                "target-vatex","target-vatwith","target-marginpct"];
   fields.forEach(function(id) {
     var el = D(id);
     if (el) state[id] = el.value;
@@ -1588,7 +1953,8 @@ function collectQuoteState() {
       airChk:    D("pl-air-chk-"+id)  ? D("pl-air-chk-"+id).checked  : false,
       airVal:    (D("pl-air-"+id)      && D("pl-air-"+id).value)      || "",
       struct:    (D("sv-"+id)          && D("sv-"+id).value)          || "",
-      structDesc:(D("sd-"+id)          && D("sd-"+id).value)          || ""
+      structDesc:(D("sd-"+id)          && D("sd-"+id).value)          || "",
+      photo:     linePhotos[id] || null
     };
   });
 
@@ -1609,9 +1975,26 @@ function collectQuoteState() {
     state[sec+"_items"] = items;
   });
 
-  state._photos = _attachedPhotos.map(function(p){return {name:p.name,dataUrl:p.dataUrl,caption:p.caption};});
+  state.rtbItems = rtbItems.map(function(r) {
+    var id = r.id;
+    return {
+      id: id,
+      catalogKey:(D("rtb-catalog-"+id)    && D("rtb-catalog-"+id).value)    || "custom",
+      name:      (D("rtbn-name-"+id)      && D("rtbn-name-"+id).value)      || "",
+      qty:       (D("rtb-qty-"+id)        && D("rtb-qty-"+id).value)        || "1",
+      price:     (D("rtb-price-"+id)      && D("rtb-price-"+id).value)      || "",
+      dongle:    D("rtb-dongle-"+id)     ? D("rtb-dongle-"+id).checked     : false,
+      misc:      (D("rtb-misc-"+id)       && D("rtb-misc-"+id).value)       || "",
+      comm:      (D("rtb-comm-"+id)       && D("rtb-comm-"+id).value)       || "",
+      outsideMM: D("rtb-outsidemm-"+id)  ? D("rtb-outsidemm-"+id).checked  : false,
+      delivery:  (D("rtb-delivery-"+id)   && D("rtb-delivery-"+id).value)   || "",
+      barecost:  (D("rtb-barecost-"+id)   && D("rtb-barecost-"+id).value)   || "",
+      photo:     rtbPhotos[id] || null
+    };
+  });
+
   state._savedAt = new Date().toISOString();
-  state._version = "10.16b";
+  state._version = "10.24";
   return state;
 }
 
@@ -1769,7 +2152,7 @@ function restoreQuoteState(state) {
                 "c-ocular","c-delivery","c-mob",
                 "c-pms-qty","c-pms-rate","c-aw-years",
                 "disc-type","disc-value",
-                "target-vatex","target-vatwith"];
+                "target-vatex","target-vatwith","target-marginpct"];
   fields.forEach(function(id) {
     var el = D(id);
     if (el && state[id] !== undefined) el.value = state[id];
@@ -1826,14 +2209,18 @@ function restoreQuoteState(state) {
         }
       }
     });
-    // Restore structural after lines built
+    // Restore structural + photo after lines built
     refreshStruct();
+    linePhotos = {};
     state.lines.forEach(function(ld, i) {
       if (lines[i]) {
-        var svEl = D("sv-"+lines[i].id);
+        var lineId = lines[i].id;
+        var svEl = D("sv-"+lineId);
         if (svEl) svEl.value = ld.struct || "";
-        var sdEl = D("sd-"+lines[i].id);
+        var sdEl = D("sd-"+lineId);
         if (sdEl) sdEl.value = ld.structDesc || "";
+        if (ld.photo) { linePhotos[lineId] = ld.photo; }
+        renderLinePhotoPreview(lineId);
       }
     });
   }
@@ -1860,14 +2247,29 @@ function restoreQuoteState(state) {
     });
   });
 
-  // Restore attached photos
-  if (state._photos && state._photos.length) {
-    _attachedPhotos = state._photos;
-    renderPhotoPreview();
-  } else {
-    _attachedPhotos = [];
-    renderPhotoPreview();
-  }
+  // Restore RTB items
+  rtbItems.forEach(function(r) { var w = D("rtbw-"+r.id); if (w) w.remove(); });
+  rtbItems = []; rtbItemCount = 0; rtbPhotos = {};
+  var rtbState = state.rtbItems || [];
+  rtbState.forEach(function(item) {
+    addRTBLine();
+    var r = rtbItems[rtbItems.length-1];
+    var id = r.id;
+    var catEl = D("rtb-catalog-"+id); if (catEl) catEl.value = item.catalogKey || "custom";
+    var nameEl = D("rtbn-name-"+id); if (nameEl) nameEl.value = item.name || "";
+    var qtyEl = D("rtb-qty-"+id); if (qtyEl) qtyEl.value = item.qty || "1";
+    var priceEl = D("rtb-price-"+id); if (priceEl) priceEl.value = item.price || "";
+    var dongleEl = D("rtb-dongle-"+id); if (dongleEl) dongleEl.checked = !!item.dongle;
+    var miscEl = D("rtb-misc-"+id); if (miscEl) miscEl.value = item.misc || "";
+    var commEl = D("rtb-comm-"+id); if (commEl) commEl.value = item.comm || "";
+    var outsideEl = D("rtb-outsidemm-"+id); if (outsideEl) outsideEl.checked = !!item.outsideMM;
+    var delEl = D("rtb-delivery-"+id); if (delEl) delEl.value = item.delivery || "";
+    var delWrap = D("rtb-delivery-wrap-"+id); if (delWrap) delWrap.style.display = item.outsideMM ? "block" : "none";
+    var barecostEl = D("rtb-barecost-"+id); if (barecostEl) barecostEl.value = item.barecost || "";
+    if (item.photo) { rtbPhotos[id] = item.photo; }
+    renderRTBPhotoPreview(id);
+  });
+
   updateAfterSales();
   togglePaymentCustom();
   calcAll();
@@ -1938,63 +2340,6 @@ function handleQuoteDrop(event) {
 
 
 
-// ── Attached Photos ──────────────────────────────────────────────────────────
-var _attachedPhotos = []; // [{name, dataUrl, caption}]
-
-function handlePhotoUpload(input) {
-  var files = Array.from(input.files || []);
-  if (!files.length) return;
-  var emptyMsg = D("photo-empty-msg");
-  if (emptyMsg) emptyMsg.style.display = "none";
-
-  files.forEach(function(file) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var dataUrl = e.target.result;
-      var photo = {name: file.name, dataUrl: dataUrl, caption: ""};
-      _attachedPhotos.push(photo);
-      renderPhotoPreview();
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value = ""; // reset so same file can be re-added
-}
-
-function renderPhotoPreview() {
-  var grid = D("photo-preview-grid");
-  if (!grid) return;
-  var emptyMsg = D("photo-empty-msg");
-
-  // Remove existing photo cards (keep empty msg)
-  var cards = grid.querySelectorAll(".photo-card");
-  cards.forEach(function(c) { c.remove(); });
-
-  if (!_attachedPhotos.length) {
-    if (emptyMsg) emptyMsg.style.display = "";
-    return;
-  }
-  if (emptyMsg) emptyMsg.style.display = "none";
-
-  _attachedPhotos.forEach(function(photo, i) {
-    var card = document.createElement("div");
-    card.className = "photo-card";
-    card.style.cssText = "position:relative;width:160px;border-radius:8px;border:1px solid var(--border);overflow:hidden;background:#f5f5f7";
-    card.innerHTML = "<img src='" + photo.dataUrl + "' style='width:100%;height:110px;object-fit:cover;display:block'>"
-      + "<div style='padding:6px'>"
-      + "<input type='text' placeholder='Caption (optional)' value='" + (photo.caption||"").replace(/'/g,"\'") + "'"
-      + " onchange='_attachedPhotos[" + i + "].caption=this.value'"
-      + " style='width:100%;font-size:10px;border:none;border-bottom:1px solid var(--border2);background:transparent;font-family:inherit;color:var(--text);outline:none;padding:2px 0'>"
-      + "</div>"
-      + "<button onclick='removePhoto(" + i + ")' title='Remove'"
-      + " style='position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center'>&#215;</button>";
-    grid.appendChild(card);
-  });
-}
-
-function removePhoto(i) {
-  _attachedPhotos.splice(i, 1);
-  renderPhotoPreview();
-}
 
 
 // ── After-sales auto-compute ─────────────────────────────────────────────────
@@ -2149,23 +2494,41 @@ function calcAll() {
   var bareCost = totalLineBare + elecTotal + ocular + delivery + mob + misc + aftersales;
   var honorVAT = honorTotal * 1.12;
   var profitAmt = bareCost * (margin / 100);
-  var vatexPreDiscount = bareCost + profitAmt;
+  var vatexMarginOnly = bareCost + profitAmt; // margin-based selling price — excludes RTB (fixed price, no margin)
 
-  // Discount — applied to the VAT-exclusive selling price, before VAT is computed
+  // Ready-to-Buy items — fixed price, no margin applied, not subject to discount
+  var rtbTotal = 0;
+  rtbItems.forEach(function(r) {
+    var rt = getRTBLineTotal(r.id);
+    rtbTotal += rt.total;
+    var subEl = D("rtb-subtotal-" + r.id); if (subEl) subEl.value = rt.subtotal ? rt.subtotal.toFixed(2) : "";
+    var delWrap = D("rtb-delivery-wrap-" + r.id); if (delWrap) delWrap.style.display = rt.outsideMM ? "block" : "none";
+    var totEl = D("rtb-total-" + r.id); if (totEl) totEl.innerHTML = rt.total > 0 ? php(rt.total) : "&mdash;";
+    var sumEl = D("rtbs-" + r.id);
+    if (sumEl) sumEl.textContent = rt.priceVATInc > 0
+      ? (rt.qty + " \u00d7 \u20b1" + rt.priceVATInc.toLocaleString("en-PH") + " (VAT-inc)" + (rt.total > 0 ? " \u00b7 \u20b1" + Math.round(rt.total * 1.12).toLocaleString("en-PH") + " total w/ VAT" : ""))
+      : "Not configured";
+  });
+
+  var vatexPreDiscount = vatexMarginOnly + rtbTotal; // shown as "before discount" total (RTB included, transparently)
+
+  // Discount — applied only to the margin-based selling price, before VAT. RTB is fixed price, never discounted.
   var discType = (D("disc-type") && D("disc-type").value) || "pct";
   var discValue = fv("disc-value");
-  var discountAmt = discType === "fixed" ? discValue : vatexPreDiscount * (discValue / 100);
+  var discountAmt = discType === "fixed" ? discValue : vatexMarginOnly * (discValue / 100);
   if (discountAmt < 0) discountAmt = 0;
-  if (discountAmt > vatexPreDiscount) discountAmt = vatexPreDiscount;
+  if (discountAmt > vatexMarginOnly) discountAmt = vatexMarginOnly;
 
   var vatex = vatexPreDiscount - discountAmt;
   var vatWith = (vatex * 1.12) + honorVAT;
   _lastBareCost = bareCost;
   window._discountAmt = discountAmt;
   window._vatexPreDiscount = vatexPreDiscount;
+  window._vatexMarginOnly = vatexMarginOnly;
+  window._rtbTotal = rtbTotal;
 
-  // Per-line sell prices keep their proportional pre-discount share; discount is shown as its own line
-  var vatexRatio = bareCost > 0 ? vatexPreDiscount / bareCost : 1;
+  // Per-line sell prices keep their proportional pre-discount share (margin-based only — RTB excluded from this ratio)
+  var vatexRatio = bareCost > 0 ? vatexMarginOnly / bareCost : 1;
   window._lineSellPrices = lineBares.map(function(b){return b * vatexRatio;});
   window._honorVAT = honorVAT;
   window._sharedSellPHP = (bareCost - totalLineBare) * vatexRatio;
@@ -2183,10 +2546,27 @@ function calcAll() {
   function phpF(n) { return n > 0 ? php(n) : "&mdash;"; }
   function set2(id, v) { var e = D(id); if (e) e.innerHTML = v; }
 
-  set2("s-bare", phpF(bareCost)); set2("s-profit", phpF(profitAmt));
+  // Compute RTB bare cost total early so the top summary cards can reflect LED + RTB combined
+  var rtbBareCostTotalEarly = 0;
+  rtbItems.forEach(function(r) { rtbBareCostTotalEarly += getRTBLineTotal(r.id).bareCost || 0; });
+  var grandBareCostEarly = bareCost + rtbBareCostTotalEarly;
+  var overallProfitAmtEarly = vatex - grandBareCostEarly;
+  var overallProfitPctEarly = vatex > 0 ? (overallProfitAmtEarly / vatex) * 100 : 0;
+  var hasRTBForCards = rtbBareCostTotalEarly > 0;
+
+  set2("s-bare", phpF(hasRTBForCards ? grandBareCostEarly : bareCost));
+  var sBareNote = D("s-bare") && D("s-bare").parentElement ? D("s-bare").parentElement.querySelector(".m-note") : null;
+  if (sBareNote) sBareNote.textContent = hasRTBForCards ? "all costs (LED + RTB), no markup" : "all costs, no markup";
+  set2("s-profit", phpF(hasRTBForCards ? overallProfitAmtEarly : profitAmt));
   set2("s-vatex", phpF(vatexDisplay)); set2("s-vatwith", phpF(vatWith));
-  var smn = D("s-margin-note"); if (smn) smn.textContent = "at " + margin + "%";
-  var smp = D("sum-margin-pct"); if (smp) smp.textContent = margin;
+  var sVatexNote = D("s-vatex") && D("s-vatex").parentElement ? D("s-vatex").parentElement.querySelector(".m-note") : null;
+  if (sVatexNote) sVatexNote.textContent = hasRTBForCards ? "selling price ex-VAT, incl. RTB + honorarium" : "selling price ex-VAT, incl. honorarium";
+  // Margin % shown = profit / VAT-exclusive selling price (not profit / bare cost, which is markup).
+  // The "Profit margin %" input field above stays a markup-vs-bare-cost lever — this display
+  // just reports the resulting true margin so it's not confused with the input.
+  var marginPctOfSelling = vatexDisplay > 0 ? (profitAmt / vatexDisplay) * 100 : 0;
+  var smn = D("s-margin-note"); if (smn) smn.textContent = "at " + (hasRTBForCards ? overallProfitPctEarly : marginPctOfSelling).toFixed(2) + "% margin" + (hasRTBForCards ? " (LED+RTB)" : "");
+  var smp = D("sum-margin-pct"); if (smp) smp.textContent = marginPctOfSelling.toFixed(2);
 
   // Summary lines rows — pure LED + shipment only (structural shown separately under Shared costs)
   var slr = D("sum-lines-rows");
@@ -2200,9 +2580,47 @@ function calcAll() {
     });
   }
 
+  var srr = D("sum-rtb-rows");
+  if (srr) {
+    srr.innerHTML = "";
+    if (rtbItems.length === 0) {
+      srr.innerHTML = "<tr><td colspan='2' style='padding-left:12px;color:var(--text3);font-style:italic'>No RTB products added</td></tr>";
+    } else {
+      rtbItems.forEach(function(r) {
+        var rt = getRTBLineTotal(r.id);
+        var name = (D("rtbn-name-" + r.id) && D("rtbn-name-" + r.id).value) || "RTB Product";
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td style='padding-left:12px;color:var(--text2)'>" + name + "</td>"
+          + "<td style='text-align:right;font-weight:500;color:var(--text)'>" + (rt.total > 0 ? php(rt.total) : "&mdash;") + "</td>";
+        srr.appendChild(tr);
+      });
+    }
+  }
+  var rtbBareRow = D("sum-rtb-barecost-row");
+  var grandBareRow = D("sum-grand-bare-row");
+  var overallProfitRow = D("sum-overall-profit-row");
+  var rtbBareCostTotal = rtbBareCostTotalEarly;
+  var grandBareCost = grandBareCostEarly;
+  if (rtbBareCostTotal > 0) {
+    if (rtbBareRow) { rtbBareRow.style.display = "table-row"; }
+    set2("sum-rtb-barecost", php(rtbBareCostTotal));
+    if (grandBareRow) { grandBareRow.style.display = "table-row"; }
+    set2("sum-grand-bare", php(grandBareCost));
+    var overallProfitAmt = overallProfitAmtEarly;
+    var overallProfitPct = overallProfitPctEarly;
+    if (overallProfitRow) { overallProfitRow.style.display = "table-row"; }
+    set2("sum-overall-profit", php(overallProfitAmt) + " <span style='font-weight:400;font-size:11px;color:#92600a'>(" + overallProfitPct.toFixed(2) + "% margin)</span>");
+  } else {
+    if (rtbBareRow) rtbBareRow.style.display = "none";
+    if (grandBareRow) grandBareRow.style.display = "none";
+    if (overallProfitRow) overallProfitRow.style.display = "none";
+  }
+
   function bk(id, v) { var e = D(id); if (e) e.innerHTML = v > 0 ? php(v) : "&mdash;"; }
-  bk("sum-elec", elecTotal); bk("sum-struct", totalStruct); bk("sum-honor", honorVAT); bk("sum-ocular", ocular); bk("sum-delivery", delivery);
+  bk("sum-elec", elecTotal); bk("sum-struct", totalStruct); bk("sum-ocular", ocular); bk("sum-delivery", delivery);
   bk("sum-mob", mob); bk("sum-misc", misc); bk("sum-aftersales", aftersales);
+  set2("sum-honor", honorTotal > 0 ? php(honorTotal) : "&mdash;");
+  set2("sum-honor-vatinc", honorVAT > 0 ? php(honorVAT) : "&mdash;");
   set2("sum-bare", phpF(bareCost)); set2("sum-profit", phpF(profitAmt));
   set2("sum-vatex-predisc", phpF(vatexPreDiscountDisplay));
   var discRow = D("sum-discount-row");
@@ -2216,6 +2634,7 @@ function calcAll() {
 
   if (D("target-vatex") && D("target-vatex").value) calcFromTarget("vatex");
   if (D("target-vatwith") && D("target-vatwith").value) calcFromTarget("vatwith");
+  if (D("target-marginpct") && D("target-marginpct").value) calcFromTargetPct();
 }
 
 function applyPreset() {
@@ -2230,19 +2649,57 @@ function applyPreset() {
 var MIN_MARGIN = 25; // minimum margin threshold %
 var _pendingMargin = 0;
 
-function calcFromTarget(mode) {
-  if (mode === "vatex") D("target-vatwith").value = ""; else D("target-vatex").value = "";
-  var raw = parseFloat(mode === "vatex" ? D("target-vatex").value : D("target-vatwith").value) || 0;
-  if (!raw) { D("target-result").style.display = "none"; return; }
-  // Honorarium is added on top of vatWith — subtract it first so reverse calc is accurate
-  var honorVAT = getLineItemTotal("honor") * 1.12;
-  var targetVatex = mode === "vatwith" ? (raw - honorVAT) / 1.12 : raw;
+// Given a desired profit % (margin = profit / VAT-ex selling price, incl. RTB + honorarium),
+// solve for the equivalent VAT-ex target price, then reuse calcFromTarget's fully-tested logic.
+function calcFromTargetPct() {
+  var M = parseFloat(D("target-marginpct").value) || 0;
+  if (!M) { D("target-vatex").value = ""; D("target-vatwith").value = ""; D("target-result").style.display = "none"; return; }
   if (_lastBareCost <= 0) {
     D("target-result").style.display = "block";
     D("target-margin-pct").textContent = "\u2014";
     D("target-margin-note").textContent = "Fill in costs first"; return;
   }
-  var req = ((targetVatex / _lastBareCost) - 1) * 100;
+  var m = M / 100;
+  if (m >= 0.99) {
+    D("target-result").style.display = "block";
+    D("target-margin-pct").innerHTML = "<span style='color:var(--red)'>Profit % must be below 99%</span>";
+    D("target-margin-note").textContent = "";
+    return;
+  }
+  var rtbTotalForTarget = 0;
+  rtbItems.forEach(function(r) { rtbTotalForTarget += getRTBLineTotal(r.id).total; });
+  var honorTotalForTarget = getLineItemTotal("honor");
+  var B = _lastBareCost, R = rtbTotalForTarget, H = honorTotalForTarget;
+  var ledVatex = (B + m * (R + H)) / (1 - m);
+  var targetVatexTotal = ledVatex + R; // matches what the "Target (PHP, VAT ex)" field represents
+  D("target-vatex").value = (Math.round(targetVatexTotal * 100) / 100).toString();
+  calcFromTarget("vatex");
+}
+
+function calcFromTarget(mode) {
+  if (mode === "vatex") D("target-vatwith").value = ""; else D("target-vatex").value = "";
+  D("target-marginpct").value = "";
+  var raw = parseFloat(mode === "vatex" ? D("target-vatex").value : D("target-vatwith").value) || 0;
+  if (!raw) { D("target-result").style.display = "none"; return; }
+  // Honorarium is added on top of vatWith — subtract it first so reverse calc is accurate
+  var honorVAT = getLineItemTotal("honor") * 1.12;
+  var targetVatex = mode === "vatwith" ? (raw - honorVAT) / 1.12 : raw;
+  // RTB items are fixed price, no markup — subtract their contribution too, so the required
+  // margin reflects only what's actually needed on the LED wall's bare cost.
+  var rtbTotalForTarget = 0;
+  rtbItems.forEach(function(r) { rtbTotalForTarget += getRTBLineTotal(r.id).total; });
+  var targetVatexLEDOnly = targetVatex - rtbTotalForTarget;
+  if (_lastBareCost <= 0) {
+    D("target-result").style.display = "block";
+    D("target-margin-pct").textContent = "\u2014";
+    D("target-margin-note").textContent = "Fill in costs first"; return;
+  }
+  var req = ((targetVatexLEDOnly / _lastBareCost) - 1) * 100;
+  // Equivalent margin must match the Profit card exactly: profit / (selling price + honorarium raw).
+  // targetVatexLEDOnly already excludes honorarium, so add it back into the denominator here.
+  var honorTotalForTarget = honorVAT / 1.12;
+  var sellingPriceInclHonor = targetVatexLEDOnly + rtbTotalForTarget + honorTotalForTarget;
+  var reqMarginEquiv = sellingPriceInclHonor > 0 ? ((targetVatexLEDOnly - _lastBareCost) / sellingPriceInclHonor) * 100 : 0;
   var belowMin = req < MIN_MARGIN;
   var belowCost = req < 0;
   var applyBtn = D("target-apply-btn");
@@ -2250,15 +2707,20 @@ function calcFromTarget(mode) {
   D("target-result").style.display = "block";
   if (belowCost) {
     D("target-margin-pct").innerHTML = "<span style='color:var(--red)'>Below bare cost</span>";
-    D("target-margin-note").textContent = "Target is lower than total bare cost";
+    D("target-margin-note").textContent = rtbTotalForTarget > 0
+      ? "Target (minus RTB) is lower than LED wall's bare cost"
+      : "Target is lower than total bare cost";
     if (applyBtn) applyBtn.style.display = "none";
     if (adminBox) adminBox.style.display = "none";
     return;
   }
-  D("target-margin-pct").innerHTML = req.toFixed(2) + "%" +
-    (belowMin ? " <span style='color:var(--red);font-size:11px;font-weight:400'>&#9888; Below 25% minimum</span>" : " <span style='color:var(--green);font-size:11px'>&#10003; OK</span>");
+  D("target-margin-pct").innerHTML = reqMarginEquiv.toFixed(2) + "%" +
+    (belowMin ? " <span style='color:var(--red);font-size:11px;font-weight:400'>&#9888; Below minimum</span>" : " <span style='color:var(--green);font-size:11px'>&#10003; OK</span>");
+  // Sync the third field so all three targets stay consistent, whichever one was edited
+  D("target-marginpct").value = reqMarginEquiv.toFixed(2);
   var honorNote = honorVAT > 0 ? " (excl. \u20b1"+Math.round(honorVAT).toLocaleString("en-PH")+" honorarium)" : "";
-  D("target-margin-note").textContent = "\u20b1" + Math.round(targetVatex).toLocaleString("en-PH") + " ex-VAT | \u20b1" + Math.round(targetVatex * 1.12 + honorVAT).toLocaleString("en-PH") + " with VAT" + honorNote;
+  var rtbNote = rtbTotalForTarget > 0 ? " (excl. \u20b1"+Math.round(rtbTotalForTarget).toLocaleString("en-PH")+" RTB)" : "";
+  D("target-margin-note").textContent = "\u20b1" + Math.round(targetVatex).toLocaleString("en-PH") + " ex-VAT | \u20b1" + Math.round(targetVatex * 1.12 + honorVAT).toLocaleString("en-PH") + " with VAT" + honorNote + rtbNote;
   D("target-result").dataset.margin = req.toFixed(10);
   _pendingMargin = req;
   if (belowMin) {
@@ -2274,7 +2736,7 @@ function applyTargetMargin() {
   var m = _pendingMargin || parseFloat(D("target-result") && D("target-result").dataset.margin) || 0;
   if (!m) return;
   D("margin").value = m.toFixed(4);
-  D("target-vatex").value = ""; D("target-vatwith").value = "";
+  D("target-vatex").value = ""; D("target-vatwith").value = ""; D("target-marginpct").value = "";
   D("target-result").style.display = "none";
   _pendingMargin = 0;
   calcAll();
@@ -2288,6 +2750,27 @@ function checkAdminApproval() {
     if (D("target-admin-pin")) D("target-admin-pin").value = "";
   } else {
     D("target-pin-err").style.display = "block";
+  }
+}
+
+// Per-product spec description for RTB items on the printed quote, keyed by catalog product.
+// Returns null for "custom"/unrecognized items — those just show the generic qty/fee mentions.
+function getRTBSpecHTML(catalogKey) {
+  var whiteboardBase = "Interactive Touch Screen<br><br>{OS} OS, 4K, Android 14.0<br>8GB RAM, 128GB ROM<br>48MP AI Camera and Microphone<br><br>"
+    + "+ With Mobile Stand<br>+ 2 Smart Pens<br>+ Free Training Software Included";
+  switch (catalogKey) {
+    case "swb65-android": case "swb75-android": case "swb86-android":
+      return whiteboardBase.replace("{OS}", "Android");
+    case "swb65-win": case "swb75-win": case "swb86-win":
+      return whiteboardBase.replace("{OS}", "Android + Windows 11 Pro");
+    case "iposter-p25":
+      return "Novastar Controller TB40<br><br>"
+        + "<strong style='color:#555'>Accessories:</strong><br>Module Power Cable<br>Module Data Cable<br>Main Power Cable 10m<br>Main Signal Cable 10m<br>Receiving Card: Novastar<br><br>"
+        + "<strong style='color:#555'>Free:</strong><br>LED Control Software<br>Replacement Module<br>Replacement Power Supply<br>Replacement Receiving Card";
+    case "kiosk-55":
+      return "Android 11.0 System<br>4K UHD Resolution 3840&times;2160P<br>3568V 2+32GB<br>with CMS Software<br>Brightness: 2,000 nits<br>Color: Black";
+    default:
+      return null;
   }
 }
 
@@ -2318,7 +2801,7 @@ function buildPrint() {
   //    "Structural and Mobilization" buckets for the printed quote, per BloomLED's
   //    JIT vs. non-JIT presentation rules. This only moves amounts between buckets —
   //    it never changes the grand total.
-  var vatexRatioForRealloc = (_lastBareCost > 0 && window._vatexPreDiscount) ? (window._vatexPreDiscount / _lastBareCost) : 1;
+  var vatexRatioForRealloc = (_lastBareCost > 0 && window._vatexMarginOnly) ? (window._vatexMarginOnly / _lastBareCost) : 1;
 
   // Structural: stays inside Product Line pricing for JIT lines (already embedded by calcAll).
   // For non-JIT lines, move it OUT of Product Line and INTO the Structural and Mobilization bucket.
@@ -2409,43 +2892,49 @@ function buildPrint() {
   }
   set2("pq-terms-payment-schedule", paymentHtml);
 
-  // Terms + Signatures block is long — always give it its own page
-  var termsBlock = D("pq-terms-block");
-  if (termsBlock) {
-    termsBlock.style.pageBreakBefore = "always";
-  }
-
   // Photos are now embedded per product line row in tbody
 
   var tbody = D("pq-lines"); if (!tbody) return;
   tbody.innerHTML = "";
 
+  var printRowNum = 0; // running counter — only increments for rows actually printed
   lines.forEach(function(line, i) {
     var id    = line.id;
     var pitch = (D("pl-pitch-" + id) && D("pl-pitch-" + id).value) || "";
     var sup   = (D("pl-sup-"   + id) && D("pl-sup-"   + id).value) || "";
     var t     = (D("pl-type-"  + id) && D("pl-type-"  + id).value) || "";
     var w     = fv("pl-w-" + id), h = fv("pl-h-" + id);
+    if (!t || !pitch || !sup || !w || !h) return; // unconfigured line — skip entirely, don't print a blank row
+    printRowNum++;
     var isJIT = t.indexOf("jit") === 0;
     var lName = lNames[i] || ("Product Line " + (i+1));
     var rowBg = i % 2 === 0 ? "#fff" : "#fafaf8";
     var ctrlTxt = (D("pl-ctrl-rec-" + id) && D("pl-ctrl-rec-" + id).textContent) || "";
     var cm2 = ctrlTxt.match(/RECOMMENDED\s*(\S+)/);
-    var ctrlName = cm2 ? cm2[1] : "Novastar";
+    var ctrlName = cm2 ? cm2[1] : "TB20";
     var descParts = [];
     descParts.push("<div style='font-weight:700;font-size:11px;color:#121214;margin-bottom:3px'>" + lName + "</div>");
     if (pitch && t) {
       descParts.push("<div style='font-size:9px;color:#555;margin-bottom:2px'>"
         + pitch + " " + getPrintTypeLabel(t) + "</div>");
     }
-    descParts.push("<div style='font-size:9px;color:#888;margin-top:3px'>Novastar " + ctrlName + " • Cables • RCV</div>");
-    var inclText = isJIT
-      ? "Incl: In-house Fabricated LED Cabinet &amp; Structural Framework, Software, Spare Module, PSU, RCV"
-      : "Incl: Software, Spare Module, PSU, RCV";
-    descParts.push("<div style='font-size:8px;color:#bbb;font-style:italic;margin-top:1px'>" + inclText + "</div>");
+    var rcvSelect = D("pl-rcv-" + id);
+    var rcvName = (rcvSelect && rcvSelect.selectedIndex >= 0) ? rcvSelect.options[rcvSelect.selectedIndex].text.split(" ")[0] : "MRV412";
+    var accFreeHTML =
+      "<div style='font-size:8.5px;color:#666;line-height:1.65;margin-top:4px'>"
+      + "<strong style='color:#555'>Accessories:</strong><br>"
+      + "Novastar " + ctrlName + " Video Controller<br>"
+      + "Module Power Cable<br>Module Data Cable<br>"
+      + "Main Power Cable 10m<br>Main Signal Cable 10m<br>"
+      + "Receiving Card: Novastar " + rcvName
+      + "</div>"
+      + "<div style='font-size:8.5px;color:#666;line-height:1.65;margin-top:4px'>"
+      + "<strong style='color:#555'>Free:</strong><br>"
+      + "LED Control Software<br>Replacement Module<br>Replacement Power Supply<br>Replacement Receiving Card"
+      + "</div>";
     var dimStr = (w && h) ? w + "m × " + h + "m" : "—";
     // Check if there's a photo attached for this product line
-    var photo = _attachedPhotos[i] || null;
+    var photo = linePhotos[id] || null;
     var tr = document.createElement("tr");
     tr.style.background = "#fff";
 
@@ -2456,7 +2945,7 @@ function buildPrint() {
       // TD3: amount — own column, right + bottom aligned
       tr.innerHTML =
         // TD1 — number
-        "<td style='padding:16px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (i+1) + "</td>"
+        "<td style='padding:16px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + printRowNum + "</td>"
 
         // TD2 — photo + description flex row
         + "<td style='padding:16px 14px 16px 0;border-bottom:1px solid #eee'>"
@@ -2471,9 +2960,8 @@ function buildPrint() {
             + "<div style='flex:1'>"
               + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:5px'>" + lName + "</div>"
               + (pitch && t ? "<div style='font-size:9px;color:#555;margin-bottom:3px'>" + pitch + " " + getPrintTypeLabel(t) + "</div>" : "")
-              + "<div style='font-size:9px;color:#888;margin-bottom:3px'>Novastar " + ctrlName + " • Cables • RCV</div>"
-              + "<div style='font-size:8px;color:#bbb;font-style:italic;margin-bottom:10px'>" + inclText + "</div>"
-              + "<div style='font-size:11px;font-weight:600;color:#52489d'>" + dimStr + "</div>"
+              + accFreeHTML
+              + "<div style='font-size:11px;font-weight:600;color:#52489d;margin-top:6px'>" + dimStr + "</div>"
             + "</div>"
 
           + "</div>"
@@ -2487,13 +2975,12 @@ function buildPrint() {
     } else {
       // ═══ NO PHOTO ROW: 3 TDs ═════════════════════════════════════════════
       tr.innerHTML =
-        "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (i+1) + "</td>"
+        "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + printRowNum + "</td>"
         + "<td style='padding:12px 10px;border-bottom:1px solid #eee;vertical-align:top'>"
           + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:5px'>" + lName + "</div>"
           + (pitch && t ? "<div style='font-size:9px;color:#555;margin-bottom:3px'>" + pitch + " " + getPrintTypeLabel(t) + "</div>" : "")
-          + "<div style='font-size:9px;color:#888;margin-bottom:3px'>Novastar " + ctrlName + " • Cables • RCV</div>"
-          + "<div style='font-size:8px;color:#bbb;font-style:italic;margin-bottom:10px'>" + inclText + "</div>"
-          + "<div style='font-size:11px;font-weight:600;color:#52489d'>" + dimStr + "</div>"
+          + accFreeHTML
+          + "<div style='font-size:11px;font-weight:600;color:#52489d;margin-top:6px'>" + dimStr + "</div>"
         + "</td>"
         + "<td style='padding:12px 14px;border-bottom:1px solid #eee;text-align:right;vertical-align:bottom;white-space:nowrap;width:150px'>"
           + "<span style='font-weight:700;font-size:13px;color:#121214'>" + phpF(lPrices[i]||0) + "</span>"
@@ -2501,6 +2988,62 @@ function buildPrint() {
     }
     tbody.appendChild(tr);
   });
+  // Ready-to-Buy products — each as its own printed line item, fixed price (not discounted).
+  // Printed BEFORE Structural, so Structural always ends up as the last line item.
+  var rtbRowNum = printRowNum + 1;
+  var rtbPrintedCountForNum = 0;
+  rtbItems.forEach(function(r) {
+    var rt = getRTBLineTotal(r.id);
+    if (rt.total <= 0) return;
+    rtbPrintedCountForNum++;
+    var rtbName = (D("rtbn-name-" + r.id) && D("rtbn-name-" + r.id).value) || "RTB Product";
+    var catKeyForSpec = (D("rtb-catalog-" + r.id) && D("rtb-catalog-" + r.id).value) || "custom";
+    var specHTML = getRTBSpecHTML(catKeyForSpec);
+    var rtbDescParts = [];
+    if (rt.qty > 1) rtbDescParts.push(rt.qty + " units");
+    if (rt.dongle > 0) rtbDescParts.push("Wireless dongle add-on");
+    if (rt.misc > 0) rtbDescParts.push("Additional miscellaneous fee");
+    if (rt.outsideMM && rt.delivery > 0) rtbDescParts.push("Delivery (outside Metro Manila)");
+    var genericHTML = rtbDescParts.join("<br>");
+    var rtbFullDescHTML = specHTML ? (specHTML + (genericHTML ? "<br><br>" + genericHTML : "")) : genericHTML;
+    var trR = document.createElement("tr");
+    trR.style.background = "#fff";
+    var photo = rtbPhotos[r.id];
+
+    if (photo) {
+      trR.innerHTML =
+        "<td style='padding:16px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (rtbRowNum++) + "</td>"
+        + "<td style='padding:16px 14px 16px 0;border-bottom:1px solid #eee'>"
+          + "<div style='display:flex;gap:16px;align-items:flex-start'>"
+            + "<div style='width:42%;flex-shrink:0'>"
+              + "<img src='" + photo.dataUrl + "' style='width:100%;height:auto;display:block;border-radius:4px;border:0.5px solid #eee'>"
+            + "</div>"
+            + "<div style='flex:1'>"
+              + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:5px'>" + rtbName + "</div>"
+              + "<div style='font-size:8.5px;color:#666;line-height:1.6'>" + rtbFullDescHTML + "</div>"
+              + "<div style='font-size:8px;color:#bbb;font-style:italic;margin-top:4px'>Price inclusive of Metro Manila delivery</div>"
+            + "</div>"
+          + "</div>"
+        + "</td>"
+        + "<td style='padding:16px 14px;border-bottom:1px solid #eee;text-align:right;vertical-align:bottom;white-space:nowrap;width:150px'>"
+          + "<span style='font-weight:700;font-size:13px;color:#121214'>" + phpF(rt.total) + "</span>"
+        + "</td>";
+    } else {
+      trR.innerHTML =
+        "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (rtbRowNum++) + "</td>"
+        + "<td style='padding:12px 10px;border-bottom:1px solid #eee;vertical-align:top'>"
+          + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:5px'>" + rtbName + "</div>"
+          + "<div style='font-size:8.5px;color:#666;line-height:1.6'>" + rtbFullDescHTML + "</div>"
+          + "<div style='font-size:8px;color:#bbb;font-style:italic;margin-top:4px'>Price inclusive of Metro Manila delivery</div>"
+        + "</td>"
+        + "<td style='padding:12px 14px;border-bottom:1px solid #eee;text-align:right;vertical-align:bottom;white-space:nowrap;width:150px'>"
+          + "<span style='font-weight:700;font-size:13px;color:#121214'>" + phpF(rt.total) + "</span>"
+        + "</td>";
+    }
+    tbody.appendChild(trR);
+  });
+
+  // Structural and Mobilization — always printed LAST, after all LED lines and RTB items.
   if (sharedPrice > 0) {
     // Build detailed line-by-line description
     var svcLines = [];
@@ -2545,7 +3088,7 @@ function buildPrint() {
     var trS = document.createElement("tr");
     trS.style.background = "#fff";
     trS.innerHTML =
-      "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (lines.length+1) + "</td>"
+      "<td style='padding:12px 10px;border-bottom:1px solid #eee;font-size:10px;color:#aaa;vertical-align:top;width:28px'>" + (printRowNum + rtbPrintedCountForNum + 1) + "</td>"
       + "<td style='padding:12px 10px;border-bottom:1px solid #eee;vertical-align:top'>"
         + "<div style='font-weight:700;font-size:12px;color:#121214;margin-bottom:6px'>Structural and Mobilization</div>"
         + "<div style='font-size:9px;color:#666;line-height:2'>" + svcLines.join("<br>") + "</div>"
@@ -2555,6 +3098,40 @@ function buildPrint() {
       + "</td>";
     tbody.appendChild(trS);
   }
+
+  // Smart pagination: Terms & Conditions is long (9 clauses + bank details), so a busy quote
+  // needs its own fresh page. But for a short quote (1 line item, no photo), forcing a break
+  // wastes most of page 1 — let it flow naturally instead.
+  var rtbPrintedCount = 0, anyPhotoAttached = Object.keys(linePhotos).length > 0;
+  rtbItems.forEach(function(r) {
+    if (getRTBLineTotal(r.id).total > 0) {
+      rtbPrintedCount++;
+      if (rtbPhotos[r.id]) anyPhotoAttached = true;
+    }
+  });
+  var totalPrintedRows = printRowNum + (sharedPrice > 0 ? 1 : 0) + rtbPrintedCount;
+  var termsBlock = D("pq-post-lineitems-block");
+  if (termsBlock) {
+    termsBlock.style.pageBreakBefore = (totalPrintedRows >= 2 || anyPhotoAttached) ? "always" : "auto";
+  }
+
+  // Warranty lines: reflect what's actually in this quote (LED wall, RTB, or both)
+  var hasLEDForWarranty = printRowNum > 0;
+  var hasRTBForWarranty = rtbPrintedCount > 0;
+  var warrantyHTML;
+  if (hasLEDForWarranty && hasRTBForWarranty) {
+    warrantyHTML = "<strong>Service Warranty:</strong><br>"
+      + "2 Years / PMS (2x a year)* &mdash; LED<br>"
+      + "1 Year / PMS (2x a year)* &mdash; RTB<br>"
+      + "<strong>LED Warranty:</strong> 2 Years<br>";
+  } else if (hasRTBForWarranty) {
+    warrantyHTML = "<strong>Service Warranty:</strong> 1 Year / PMS (2x a year)*<br>";
+  } else {
+    warrantyHTML = "<strong>Service Warranty:</strong> 2 Years / PMS (2x a year)*<br>"
+      + "<strong>LED Warranty:</strong> 2 Years<br>";
+  }
+  var wEl = D("pq-warranty-lines"); if (wEl) wEl.innerHTML = warrantyHTML;
+
   set2("pq-subtotal", phpF(vatexPreDiscount));
   var discRowP = D("pq-discount-row");
   if (discRowP) discRowP.style.display = discountAmt > 0 ? "table-row" : "none";
@@ -2640,6 +3217,7 @@ function checkPin() {
     D("admin-content").style.display = "block";
     buildAdminTables();
     buildSignaturesAdmin();
+    buildRTBCatalogAdmin();
   } else D("pin-err").style.display = "block";
 }
 function closeAdmin() { D("admin-modal").classList.remove("open"); }
@@ -2662,6 +3240,52 @@ try { var _sigStore = localStorage.getItem("blm_signatures"); if (_sigStore) SAL
 
 function saveSignatures() {
   try { localStorage.setItem("blm_signatures", JSON.stringify(SALES_SIGNATURES)); } catch(e) {}
+}
+
+function buildRTBCatalogAdmin() {
+  var wrap = D("admin-rtb-catalog"); if (!wrap) return;
+  var html = "<table class='ptbl' style='width:100%'><thead><tr><th>Product</th><th>Price (VAT-inc)</th><th>Bare cost</th></tr></thead><tbody>";
+  RTB_CATALOG.forEach(function(c, i) {
+    if (c.key === "custom") return;
+    html += "<tr>"
+      + "<td style='white-space:normal;min-width:220px'><input type='text' id='admin-rtb-name-" + i + "' value=\"" + c.name.replace(/"/g,"&quot;") + "\" style='width:100%;text-align:left'></td>"
+      + "<td><input type='number' id='admin-rtb-price-" + i + "' value='" + c.price + "' step='500'></td>"
+      + "<td><input type='number' id='admin-rtb-barecost-" + i + "' value='" + c.bareCost + "' step='500'></td>"
+      + "</tr>";
+  });
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+}
+
+function saveRTBCatalog() {
+  var overrides = {};
+  RTB_CATALOG.forEach(function(c, i) {
+    if (c.key === "custom") return;
+    var nameEl = D("admin-rtb-name-" + i);
+    var priceEl = D("admin-rtb-price-" + i);
+    var bareCostEl = D("admin-rtb-barecost-" + i);
+    if (nameEl) c.name = nameEl.value;
+    if (priceEl) c.price = parseFloat(priceEl.value) || c.price;
+    if (bareCostEl) c.bareCost = parseFloat(bareCostEl.value) || c.bareCost;
+    c.label = c.label.replace(/\u2014 \u20b1[\d,]+$/, "\u2014 \u20b1" + Math.round(c.price).toLocaleString("en-PH"));
+    overrides[c.key] = {name: c.name, price: c.price, bareCost: c.bareCost};
+  });
+  try { localStorage.setItem("blm_rtb_catalog_v1", JSON.stringify(overrides)); } catch(e) {}
+  // Refresh any open RTB catalog dropdowns to reflect new labels
+  rtbItems.forEach(function(r) {
+    var sel = D("rtb-catalog-" + r.id);
+    if (sel) {
+      var currentVal = sel.value;
+      sel.innerHTML = "";
+      RTB_CATALOG.forEach(function(c) {
+        var o = document.createElement("option");
+        o.value = c.key; o.textContent = c.label;
+        sel.appendChild(o);
+      });
+      sel.value = currentVal;
+    }
+  });
+  alert("RTB catalog saved.");
 }
 
 function buildSignaturesAdmin() {
@@ -2752,6 +3376,49 @@ function getSalesName() {
 }
 
 // Init
+function resetWholeTool() {
+  if (!confirm("Reset the whole costing tool? This clears all product lines, RTB items, costs, and project details. This cannot be undone.")) return;
+
+  // Clear product lines
+  lines.forEach(function(l) { var w = D("plw-"+l.id); if (w) w.remove(); });
+  lines = []; lineCount = 0; linePhotos = {};
+  D("btn-add").style.display = "";
+
+  // Clear RTB items + their photos
+  rtbItems.forEach(function(r) { var w = D("rtbw-"+r.id); if (w) w.remove(); });
+  rtbItems = []; rtbItemCount = 0; rtbPhotos = {};
+
+  // Clear dynamic line items (electrical, misc, honorarium)
+  ["elec","misc","honor"].forEach(function(sec) {
+    var container = D(sec+"-lines");
+    if (container) container.innerHTML = "";
+    lineItemSeq[sec] = 0;
+  });
+
+  // Clear project detail fields
+  ["proj-client","proj-name","proj-attn","proj-attn-title","proj-summary","proj-ship-address",
+   "c-ocular","c-delivery","c-mob","c-pms-rate","c-aw-years",
+   "disc-value","target-vatex","target-vatwith","proj-payment-custom"].forEach(function(id) {
+    var el = D(id); if (el) el.value = "";
+  });
+  var prepBy = D("prep-by"); if (prepBy) prepBy.value = "";
+  var acctType = D("acct-type"); if (acctType) acctType.value = "standard";
+  var margin = D("margin"); if (margin) margin.value = "30";
+  var discType = D("disc-type"); if (discType) discType.value = "pct";
+  var leadTime = D("proj-leadtime"); if (leadTime) leadTime.value = "30\u201345 days";
+  var payTerms = D("proj-payment-terms"); if (payTerms) payTerms.value = "standard";
+  togglePaymentCustom();
+
+  // Reset quote number
+  var qEl = D("proj-quote-num");
+  if (qEl) { qEl.value = ""; qEl.placeholder = "Select sales consultant"; }
+
+  addLine();
+  updateAfterSales();
+  calcAll();
+}
+
+
 (function init() {
   if (D("pl-container")) {
     // Load saved FX rate
