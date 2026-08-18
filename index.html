@@ -2668,10 +2668,18 @@ function calcFromTargetPct() {
   }
   var rtbTotalForTarget = 0;
   rtbItems.forEach(function(r) { rtbTotalForTarget += getRTBLineTotal(r.id).total; });
+  var rtbBareCostForTarget = 0;
+  rtbItems.forEach(function(r) { rtbBareCostForTarget += getRTBLineTotal(r.id).bareCost || 0; });
   var honorTotalForTarget = getLineItemTotal("honor");
   var B = _lastBareCost, R = rtbTotalForTarget, H = honorTotalForTarget;
-  var ledVatex = (B + m * (R + H)) / (1 - m);
-  var targetVatexTotal = ledVatex + R; // matches what the "Target (PHP, VAT ex)" field represents
+  var targetVatexTotal;
+  if (rtbBareCostForTarget > 0) {
+    // Blended (LED + RTB) target — matches the Overall Profit card's definition exactly.
+    targetVatexTotal = (B + rtbBareCostForTarget) / (1 - m);
+  } else {
+    var ledVatex = (B + m * (R + H)) / (1 - m);
+    targetVatexTotal = ledVatex + R; // matches what the "Target (PHP, VAT ex)" field represents
+  }
   D("target-vatex").value = (Math.round(targetVatexTotal * 100) / 100).toString();
   calcFromTarget("vatex");
 }
@@ -2695,11 +2703,21 @@ function calcFromTarget(mode) {
     D("target-margin-note").textContent = "Fill in costs first"; return;
   }
   var req = ((targetVatexLEDOnly / _lastBareCost) - 1) * 100;
-  // Equivalent margin must match the Profit card exactly: profit / (selling price + honorarium raw).
-  // targetVatexLEDOnly already excludes honorarium, so add it back into the denominator here.
+  // Equivalent margin must match what the Profit card will actually show after applying.
+  // When RTB items have a bare cost on record, the Profit card shows the BLENDED
+  // (LED + RTB) profit %, computed as (combined selling price − combined bare cost) / combined
+  // selling price — matching sum-overall-profit exactly, RTB bare cost included.
+  // Otherwise it falls back to the LED-only margin (profit / selling price incl. honorarium raw).
+  var rtbBareCostForTarget = 0;
+  rtbItems.forEach(function(r) { rtbBareCostForTarget += getRTBLineTotal(r.id).bareCost || 0; });
   var honorTotalForTarget = honorVAT / 1.12;
-  var sellingPriceInclHonor = targetVatexLEDOnly + rtbTotalForTarget + honorTotalForTarget;
-  var reqMarginEquiv = sellingPriceInclHonor > 0 ? ((targetVatexLEDOnly - _lastBareCost) / sellingPriceInclHonor) * 100 : 0;
+  var reqMarginEquiv;
+  if (rtbBareCostForTarget > 0) {
+    reqMarginEquiv = targetVatex > 0 ? ((targetVatex - _lastBareCost - rtbBareCostForTarget) / targetVatex) * 100 : 0;
+  } else {
+    var sellingPriceInclHonor = targetVatexLEDOnly + rtbTotalForTarget + honorTotalForTarget;
+    reqMarginEquiv = sellingPriceInclHonor > 0 ? ((targetVatexLEDOnly - _lastBareCost) / sellingPriceInclHonor) * 100 : 0;
+  }
   var belowMin = req < MIN_MARGIN;
   var belowCost = req < 0;
   var applyBtn = D("target-apply-btn");
