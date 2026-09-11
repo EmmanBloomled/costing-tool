@@ -640,7 +640,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
       </tr>
       <tr style="background:#d3e862">
         <td style="padding:12px 10px;width:28px"></td>
-        <td style="padding:12px 10px;font-size:11px;font-weight:800;color:#121214;text-transform:uppercase;letter-spacing:.03em">TOTAL AMOUNT (VAT Inclusive)</td>
+        <td id="pq-total-label" style="padding:12px 10px;font-size:11px;font-weight:800;color:#121214;text-transform:uppercase;letter-spacing:.03em">TOTAL AMOUNT (VAT Inclusive)</td>
         <td style="padding:12px 14px;text-align:right;font-size:13px;font-weight:800;color:#121214;width:150px" id="pq-total">&mdash;</td>
       </tr>
     </table>
@@ -3669,38 +3669,41 @@ function buildPrint() {
   }
   var twEl = D("pq-terms-warranty-duration"); if (twEl) twEl.innerHTML = termsWarrantyText;
 
-  // Column header + totals section reflect the selected VAT display mode. The Subtotal
-  // and VAT 12% rows only make sense in VAT-Exclusive mode (they show the pre-VAT figure
-  // and the tax on top of it) — in VAT-Inclusive mode the client sees one clean total,
-  // since every line item already has VAT baked in. The actual TOTAL AMOUNT is identical
-  // either way — only the breakdown above it changes.
+  // Column header + totals section reflect the selected VAT display mode.
+  // VAT Exclusive: the client sees ONE clean number — the VAT-exclusive price — with no
+  // breakdown at all (no Subtotal row, no VAT row, no Discount row visible separately).
+  // VAT Inclusive: the client sees the full breakdown — Subtotal (VAT-ex), Discount, VAT 12%,
+  // and the VAT-inclusive TOTAL AMOUNT highlighted as the final figure.
   var amountHeaderEl = D("pq-amount-header");
   if (amountHeaderEl) amountHeaderEl.textContent = vatDisplayMode === "inclusive" ? "AMOUNT (PHP, VAT INC)" : "AMOUNT (PHP, VAT EX)";
 
   var subtotalRowEl = D("pq-subtotal-row");
   var vatRowEl = D("pq-vat-row");
-  if (vatDisplayMode === "inclusive") {
+  var totalLabelEl = D("pq-total-label");
+  if (vatDisplayMode === "exclusive") {
     if (subtotalRowEl) subtotalRowEl.style.display = "none";
     if (vatRowEl) vatRowEl.style.display = "none";
+    if (totalLabelEl) totalLabelEl.textContent = "TOTAL AMOUNT (VAT Exclusive)";
   } else {
     if (subtotalRowEl) subtotalRowEl.style.display = "table-row";
     if (vatRowEl) vatRowEl.style.display = "table-row";
+    if (totalLabelEl) totalLabelEl.textContent = "TOTAL AMOUNT (VAT Inclusive)";
   }
 
   set2("pq-subtotal", phpF(vatexPreDiscount));
   var discRowP = D("pq-discount-row");
-  if (discRowP) discRowP.style.display = discountAmt > 0 ? "table-row" : "none";
+  if (discRowP) discRowP.style.display = (discountAmt > 0 && vatDisplayMode === "inclusive") ? "table-row" : "none";
   var discLabelEl = D("pq-discount-label");
   if (discLabelEl) {
     var dType = (D("disc-type") && D("disc-type").value) || "pct";
     var dVal = fv("disc-value");
     discLabelEl.textContent = (dType === "pct" && dVal > 0) ? " (" + dVal + "%)" : "";
   }
-  // Discount amount follows the same display mode as everything else on the quote
-  var discountAmtForDisplay = vatDisplayMode === "inclusive" ? discountAmt * 1.12 : discountAmt;
-  set2("pq-discount", discountAmt > 0 ? "&minus;" + phpF(discountAmtForDisplay) : "&mdash;");
+  set2("pq-discount", discountAmt > 0 ? "&minus;" + phpF(discountAmt) : "&mdash;");
   set2("pq-vat", phpF(vatAmt));
-  set2("pq-total", phpF(total));
+  // The highlighted final total is VAT-exclusive in Exclusive mode, VAT-inclusive in
+  // Inclusive mode — matching whichever single number the client is meant to see.
+  set2("pq-total", vatDisplayMode === "exclusive" ? phpF(vatex) : phpF(total));
 }
 
 function buildAdminTables() {
